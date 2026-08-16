@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version-file: ".python-version"
+          enable-cache: true
+      - name: Install
+        run: uv sync --all-groups --frozen
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Lint
+        run: uv run ruff check --output-format=github .
+      - name: Types
+        run: uv run ty check src/
+      - name: Tests
+        run: uv run pytest --cov-report=xml
+      - name: Audit
+        # chromadb is a CrewAI transitive. PYSEC-2026-311 is Chroma HTTP-server RCE;
+        # this app never starts a Chroma server. CrewAI still pins 1.1.x.
+        run: uv run pip-audit . --ignore-vuln PYSEC-2026-311
+
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
