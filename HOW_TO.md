@@ -11,7 +11,7 @@ Everything here assumes you're running the Streamlit dashboard. For a dictionary
    cd autonomous-coding-agent-crew
    ```
 
-2. **Launch.** On Windows, double-click `run.cmd` — it creates `.env` from `.env.example` if missing, runs `uv sync --all-groups`, and starts the app. On any OS, you can instead run:
+2. **Launch.** On Windows, double-click `run.cmd`; on Linux/macOS, run `./run.sh` — either creates `.env` from `.env.example` if missing, runs `uv sync --all-groups`, and starts the app. Or, on any OS, run it directly:
 
    ```bash
    uv sync --all-groups

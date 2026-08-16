@@ -7,6 +7,7 @@ Dictionary-style reference for `agent-crew`. For the narrative system design, se
 | Command | Does |
 | --- | --- |
 | `run.cmd` | Windows: creates `.env` from `.env.example` if missing, `uv sync --all-groups`, launches Streamlit headless |
+| `./run.sh` | Linux/macOS: same as `run.cmd` |
 | `uv run streamlit run streamlit_app.py` | Launch the dashboard directly |
 | `uv run agent-crew` | Same app, via the `agent-crew` console script (`src/agent_crew/__init__.py:main`) |
 | `uv run pytest` | Run the test suite (coverage on by default, see `pyproject.toml`) |

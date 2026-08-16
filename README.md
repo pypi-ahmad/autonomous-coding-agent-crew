@@ -71,7 +71,7 @@ Needs [uv](https://docs.astral.sh/uv/) and Python 3.12.
 3. `uv sync --all-groups`
 4. `copy .env.example .env` (Windows) or `cp .env.example .env`
 5. Fill keys for the provider you'll use (skip this for Ollama)
-6. Double-click `run.cmd`, or run the command in [Usage](#usage)
+6. Double-click `run.cmd` (Windows) or run `./run.sh` (Linux/macOS), or use the command in [Usage](#usage)
 
 > [!IMPORTANT]
 > Never commit `.env`.
@@ -88,7 +88,7 @@ Same app via the package script:
 uv run agent-crew
 ```
 
-`run.cmd` runs `uv sync`, copies `.env.example` if `.env` is missing, then starts Streamlit — a first-time user can just double-click it.
+`run.cmd` (Windows) / `run.sh` (Linux/macOS) run `uv sync`, copy `.env.example` if `.env` is missing, then start Streamlit — a first-time user can just double-click `run.cmd` or run `./run.sh`.
 
 For a full first-run walkthrough and task recipes (templates, databases, dry-run, locked files, autonomous mode, resuming a checkpoint, exporting), see **[HOW_TO.md](HOW_TO.md)**.
 
