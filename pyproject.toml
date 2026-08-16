@@ -1,7 +1,7 @@
 [project]
 name = "agent-crew"
 version = "0.1.0"
-description = "Phase 1 Autonomous Coding Agent Crew (CrewAI + LangGraph + Streamlit)"
+description = "Phase 9 Autonomous Coding Agent Crew (CrewAI + LangGraph + Streamlit)"
 readme = "README.md"
 authors = [
     { name = "Ahmad Mujtaba", email = "72138709+pypi-ahmad@users.noreply.github.com" }
@@ -63,7 +63,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "PLR2004", "ANN"]
-"streamlit_app.py" = ["INP001"]
+"streamlit_app.py" = ["INP001", "C901", "PLR0912", "PLR0915"]
+"src/agent_crew/graph.py" = ["TRY300", "PLR0913"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["agent_crew"]

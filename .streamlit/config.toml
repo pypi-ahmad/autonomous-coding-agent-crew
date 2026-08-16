@@ -1,0 +1,69 @@
+[theme]
+base = "dark"
+primaryColor = "#61afef"
+backgroundColor = "#282c34"
+secondaryBackgroundColor = "#21252b"
+codeBackgroundColor = "#1e2127"
+textColor = "#abb2bf"
+linkColor = "#61afef"
+borderColor = "#3e4451"
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "8px"
+buttonRadius = "8px"
+font = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap"
+headingFont = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+codeFontSize = "13px"
+codeTextColor = "#abb2bf"
+baseFontSize = 14
+baseFontWeight = 400
+headingFontSizes = ["30px", "22px", "18px", "16px", "14px", "12px"]
+headingFontWeights = [600, 600, 500, 500, 500, 500]
+linkUnderline = false
+chartCategoricalColors = ["#61afef", "#98c379", "#e5c07b", "#e06c75", "#c678dd", "#56b6c2", "#d19a66"]
+blueColor = "#61afef"
+greenColor = "#98c379"
+yellowColor = "#e5c07b"
+redColor = "#e06c75"
+violetColor = "#c678dd"
+orangeColor = "#d19a66"
+
+[theme.sidebar]
+backgroundColor = "#21252b"
+secondaryBackgroundColor = "#282c34"
+codeBackgroundColor = "#1e2127"
+borderColor = "#3e4451"
+
+[theme.dark]
+primaryColor = "#61afef"
+backgroundColor = "#282c34"
+secondaryBackgroundColor = "#21252b"
+codeBackgroundColor = "#1e2127"
+textColor = "#abb2bf"
+linkColor = "#61afef"
+borderColor = "#3e4451"
+
+[theme.dark.sidebar]
+backgroundColor = "#21252b"
+secondaryBackgroundColor = "#282c34"
+codeBackgroundColor = "#1e2127"
+borderColor = "#3e4451"
+
+[theme.light]
+primaryColor = "#2563eb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f4f4f5"
+codeBackgroundColor = "#f4f4f5"
+textColor = "#18181b"
+linkColor = "#2563eb"
+borderColor = "#e4e4e7"
+codeTextColor = "#18181b"
+
+[theme.light.sidebar]
+backgroundColor = "#fafafa"
+secondaryBackgroundColor = "#f4f4f5"
+codeBackgroundColor = "#e4e4e7"
+textColor = "#18181b"
+borderColor = "#e4e4e7"
+primaryColor = "#2563eb"
