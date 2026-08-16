@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv/
+
+# Local secrets and generated runs
+.env
+runs/
+.pytest_cache/
+.ruff_cache/
+.ty/
+.coverage
+coverage.xml
+htmlcov/
+.streamlit/secrets.toml
+.remember/
+graphify-out/
+.codegraph/
+.clinerules/
+.cursor/
+.opencode/
+.windsurf/
