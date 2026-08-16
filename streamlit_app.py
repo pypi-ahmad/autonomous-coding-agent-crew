@@ -4,7 +4,14 @@ from pathlib import Path
 
 import streamlit as st
 
-from agent_crew.graph import resume_phase, run_autonomous, run_plan, stream_code, stream_verify
+from agent_crew.graph import (
+    initial_state,
+    resume_phase,
+    run_autonomous,
+    run_plan,
+    stream_code,
+    stream_verify,
+)
 from agent_crew.llm import models_for, validate_selection
 from agent_crew.memory import format_lessons, recall, remember
 from agent_crew.policy import Policy
@@ -305,6 +312,28 @@ if st.session_state.phase == "input":
     with st.container(horizontal=True):
         st.selectbox("Stack template", list(TEMPLATE_NAMES), key="template")
         st.selectbox("Database", list(DATABASE_NAMES), key="database")
+        if st.button(
+            "Start from template",
+            icon=":material/rocket_launch:",
+            help="Scaffold the picked template/database into a fresh run now. No task, no model.",
+        ):
+            try:
+                scaffold = initial_state(
+                    "",
+                    provider,
+                    model or "unused",
+                    None,
+                    template=str(st.session_state.get("template") or "blank"),
+                    database=str(st.session_state.get("database") or "none"),
+                    policy=policy_from_ui(),
+                )
+                st.session_state.draft = scaffold
+                st.session_state.result = scaffold
+                st.session_state.error = None
+                st.session_state.phase = "done"
+                st.rerun()
+            except Exception as exc:
+                st.session_state.error = str(exc)
     st.caption("Existing folder is auto-detected. Template scaffolds missing files only.")
     with st.form("task_form"):
         task = st.text_area(

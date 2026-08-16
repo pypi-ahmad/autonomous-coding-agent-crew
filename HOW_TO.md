@@ -35,7 +35,12 @@ Everything here assumes you're running the Streamlit dashboard. For a dictionary
 
 ### Scaffold a project from a template
 
-Pick one of the 12 templates in **Stack template** before clicking **Plan** (`blank`, `library`, `cli`, `fastapi`, `flask`, `django`, `streamlit`, `datascience`, `express`, `react`, `nextjs`, `fullstack`). The template only writes files that don't already exist, so it's safe to combine with an existing folder. Full file list per template: [REFERENCE.md → Templates](REFERENCE.md#templates-templatespytemplates).
+Pick one of the 12 templates in **Stack template** (`blank`, `library`, `cli`, `fastapi`, `flask`, `django`, `streamlit`, `datascience`, `express`, `react`, `nextjs`, `fullstack`), then either:
+
+- Click **Start from template** for an instant, no-LLM scaffold — the files land in a fresh `runs/<id>/` and you're dropped straight on the results dashboard to browse/download them.
+- Or type a task and click **Plan** as usual, if you want the crew to build on top of the scaffold.
+
+The template only writes files that don't already exist, so it's safe to combine with an existing folder, and agents can freely edit/replace any scaffolded file afterward (nothing is template-locked unless you lock it yourself, see below). Full file list per template: [REFERENCE.md → Templates](REFERENCE.md#templates-templatespytemplates).
 
 ### Add a database overlay
 
