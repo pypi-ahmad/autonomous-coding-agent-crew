@@ -1,0 +1,121 @@
+[project]
+name = "agent-crew"
+version = "0.1.0"
+description = "Phase 1 Autonomous Coding Agent Crew (CrewAI + LangGraph + Streamlit)"
+readme = "README.md"
+authors = [
+    { name = "Ahmad Mujtaba", email = "72138709+pypi-ahmad@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "crewai>=0.80",
+    "langgraph>=0.4",
+    "python-dotenv>=1.2.2",
+    "streamlit>=1.57",
+]
+
+[project.scripts]
+agent-crew = "agent_crew:main"
+
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+audit = [
+    "pip-audit>=2.9.0",
+]
+dev = [
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "audit" },
+]
+lint = [
+    "ruff>=0.16.3",
+    "ty>=0.0.72",
+]
+test = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D",
+    "COM812",
+    "ISC001",
+    "INP001",
+    "CPY",
+    "EM",
+    "TRY003",
+    "TC003",
+    "BLE001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "PLR2004", "ANN"]
+"streamlit_app.py" = ["INP001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["agent_crew"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=agent_crew",
+    "--cov-report=term-missing",
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks integration tests",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/agent_crew"]
+omit = [
+    "*/__main__.py",
+    "*/conftest.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]
+show_missing = true
+
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.rules]
+# Strict on our symbols. Lenient on third-party stub gaps (CrewAI / LangGraph).
+possibly-unresolved-reference = "error"
+unused-ignore-comment = "warn"
+invalid-argument-type = "ignore"
+unresolved-attribute = "ignore"
+pydantic-discarded-extra-argument = "ignore"
