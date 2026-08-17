@@ -17,7 +17,7 @@ A clear description of what went wrong.
 What you expected to happen instead.
 
 **Actual behavior**
-What actually happened. Paste relevant output from `runs/<id>/` or the terminal if available.
+What actually happened. Paste relevant output from `runs/<id>/` (or the app-wide `runs/agent-crew.log`) or the terminal if available.
 
 **Environment**
 - OS: Windows / Linux (version)

@@ -18,10 +18,10 @@ Needs [uv](https://docs.astral.sh/uv/) and Python 3.12.
 git clone https://github.com/pypi-ahmad/autonomous-coding-agent-crew.git
 cd autonomous-coding-agent-crew
 uv sync --all-groups
-copy .env.example .env   # Windows; cp on Linux
+copy .env.example .env   # Windows; cp on Linux/macOS
 ```
 
-Run the app:
+Run the app (`run.cmd` / `run.sh` do the two steps above for you too):
 
 ```bash
 uv run streamlit run streamlit_app.py
@@ -34,9 +34,10 @@ uv run ruff format .
 uv run ruff check .
 uv run ty check src/
 uv run pytest
+uv run pip-audit .
 ```
 
-Or `make lint test` (see `Makefile`).
+Or `make lint test audit` (see `Makefile`).
 
 ## Code style
 

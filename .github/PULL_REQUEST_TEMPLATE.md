@@ -12,4 +12,4 @@ Closes #
 - [ ] `uv run ty check src/` clean
 - [ ] `uv run pytest` passes
 - [ ] Added/updated tests for the behavior change
-- [ ] Updated `README.md` / `ARCHITECTURE.md` if this changes user-facing behavior or module layout
+- [ ] Updated `README.md` / `REFERENCE.md` / `HOW_TO.md` / `ARCHITECTURE.md` if this changes user-facing behavior or module layout
