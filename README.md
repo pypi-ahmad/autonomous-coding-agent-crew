@@ -14,11 +14,20 @@ https://github.com/pypi-ahmad/autonomous-coding-agent-crew
 [![LangGraph](https://img.shields.io/badge/LangGraph-%3E%3D0.4-1C3C3C?style=flat-square)](https://langchain-ai.github.io/langgraph/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-%3E%3D1.57-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io)
 
-[Features](#features) • [Getting started](#getting-started) • [Usage](#usage) • [Providers](#providers) • [Development](#development) • [Docs](#docs)
-
 </div>
 
-`agent-crew` `0.1.0` is a local-first, hybrid CrewAI + LangGraph coding crew with a Streamlit dashboard. Describe a coding task or a high-level goal; a planner, parallel coder specialists (backend/frontend/database as needed), a reviewer, a tester, a debugger, and a documenter take turns through a LangGraph pipeline, with CrewAI agents doing the reasoning at each step. Point it at a blank folder with a template, or an existing project — it detects the stack either way. You approve the plan, review the diff after coding, then quality gates (tests, coverage, lint, types, security, perf) decide whether the run goes to the debugger or to docs. Everything lands in `runs/<id>/`.
+## Index
+
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Getting started](#getting-started)
+- [Usage](#usage)
+- [Providers](#providers)
+- [Project layout](#project-layout)
+- [Development](#development)
+- [Docs](#docs) — links to every other doc in this repo
+
+`agent-crew` `0.2.0` is a local-first, hybrid CrewAI + LangGraph coding crew with a Streamlit dashboard. Describe a coding task or a high-level goal; a planner, parallel coder specialists (backend/frontend/database as needed), a reviewer, a tester, a debugger, and a documenter take turns through a LangGraph pipeline, with CrewAI agents doing the reasoning at each step. Point it at a blank folder with a template, or an existing project — it detects the stack either way. You approve the plan, review the diff after coding, then quality gates (tests, coverage, lint, types, security, perf) decide whether the run goes to the debugger or to docs. Everything lands in `runs/<id>/`.
 
 ```text
 detect → plan + vote → parallel specialists + tester → reviewer → gates ↔ debug → docs
