@@ -80,7 +80,7 @@ if (
                 st.session_state.phase = checkpoint_phase
 
 st.title("Autonomous coding agent crew")
-st.caption("Phase 9. Parallel specialists, reviewer, votes, conflict merge.")
+st.caption("Parallel specialists, reviewer, votes, conflict merge, autonomous mode.")
 
 
 @st.cache_data(ttl="30s", max_entries=8)

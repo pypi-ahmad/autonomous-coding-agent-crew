@@ -1,7 +1,7 @@
 [project]
 name = "agent-crew"
-version = "0.1.0"
-description = "Phase 9 Autonomous Coding Agent Crew (CrewAI + LangGraph + Streamlit)"
+version = "0.2.0"
+description = "Autonomous Coding Agent Crew (CrewAI + LangGraph + Streamlit)"
 readme = "README.md"
 authors = [
     { name = "Ahmad Mujtaba", email = "72138709+pypi-ahmad@users.noreply.github.com" }
