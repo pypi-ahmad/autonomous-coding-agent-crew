@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextvars import ContextVar
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,25 @@ from agent_crew.tools import make_fs_tools, make_read_tools
 
 if TYPE_CHECKING:
     from crewai.tools import BaseTool
+
+_USAGE_FIELDS = ("total_tokens", "prompt_tokens", "completion_tokens", "successful_requests")
+_USAGE: ContextVar[dict[str, int] | None] = ContextVar("usage", default=None)
+
+
+def reset_usage() -> None:
+    _USAGE.set(dict.fromkeys(_USAGE_FIELDS, 0))
+
+
+def get_usage() -> dict[str, int]:
+    return dict(_USAGE.get() or dict.fromkeys(_USAGE_FIELDS, 0))
+
+
+def _add_usage(usage: object) -> None:
+    current = _USAGE.get()
+    if current is None or usage is None:
+        return
+    for field in _USAGE_FIELDS:
+        current[field] += int(getattr(usage, field, 0) or 0)
 
 
 def _agent(
@@ -113,6 +133,7 @@ def run_role(agent: Agent, description: str, expected_output: str) -> str:
     task = Task(description=description, expected_output=expected_output, agent=agent)
     crew = Crew(agents=[agent], tasks=[task], verbose=False)
     result = crew.kickoff()
+    _add_usage(getattr(result, "token_usage", None))
     raw = getattr(result, "raw", result)
     return str(raw)
 

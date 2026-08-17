@@ -162,6 +162,12 @@ Only these command heads are allowed; everything else raises `ValueError`. Unsaf
 | `EVAL.md` | `graph.py::evaluate_node` | Score /100 + suggestions + model review |
 | `crew-project.zip` | `workspace.py::zip_workspace` | Whole workspace dir, download button in the UI |
 | `requirements.txt` | `autonomy.py::install_deps` | Auto-detected third-party imports, merged in |
+| `terminal.log` | `tools.py::RunTerminalTool` (via `workspace.py::append_terminal_log`) | Every agent-run terminal command + result, in order; rendered in the dashboard's Terminal tab |
+| `run.json` | `workspace.py::save_run` | Full `CrewState` snapshot after every node; powers checkpoint resume and refresh recovery |
+
+## Token usage (`crew.py`)
+
+`reset_usage()` / `get_usage()` / `_add_usage(usage)` wrap a `ContextVar` (same pattern as `policy.py`'s `Policy`), so usage accumulates across an entire run — including every autonomous re-planning cycle — without threading a new field through `CrewState`. `run_role` calls `_add_usage` with `CrewOutput.token_usage` (a `crewai.types.usage_metrics.UsageMetrics`) after every `crew.kickoff()`. `initial_state()` calls `reset_usage()` once per new run. No dollar-cost estimate is computed — this project doesn't ship a pricing table for its models.
 
 ## Module index
 

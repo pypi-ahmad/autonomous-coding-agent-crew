@@ -4,6 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from agent_crew.crew import get_usage
 from agent_crew.graph import (
     initial_state,
     resume_phase,
@@ -24,9 +25,11 @@ from agent_crew.workspace import (
     load_run,
     parse_pytest_counts,
     read_file,
+    read_terminal_log,
     read_trace,
     render_history,
     render_report,
+    save_run,
     zip_workspace,
 )
 
@@ -50,6 +53,23 @@ st.session_state.setdefault("result", None)
 st.session_state.setdefault("error", None)
 st.session_state.setdefault("phase", "input")
 st.session_state.setdefault("draft", None)
+st.session_state.setdefault("autonomous_gen", None)
+
+if (
+    st.session_state.phase == "input"
+    and st.session_state.draft is None
+    and not st.session_state.get("_checked_recovery")
+):
+    st.session_state["_checked_recovery"] = True
+    run_id = st.query_params.get("run")
+    if run_id:
+        match = next((p for p in list_runs() if p.parent.name == run_id), None)
+        if match is not None:
+            recovered = load_run(match.parent)
+            checkpoint_phase = resume_phase(str(recovered.get("checkpoint", "")))
+            st.session_state.draft = recovered
+            st.session_state.result = recovered if checkpoint_phase == "done" else None
+            st.session_state.phase = checkpoint_phase
 
 st.title("Autonomous coding agent crew")
 st.caption("Phase 9. Parallel specialists, reviewer, votes, conflict merge.")
@@ -78,10 +98,13 @@ def pump(events: object, status: object, live_file: object) -> dict:
     for node, _update, merged in events:
         agent = merged.get("current_agent") or node
         current = merged.get("current_file") or "—"
-        live_file.caption(f"Current: {agent} · {current}")
+        usage = get_usage()
+        live_file.caption(f"Current: {agent} · {current} · {usage['total_tokens']} tokens")
         if merged.get("log"):
             status.write(merged["log"][-1])
         st.session_state.draft = merged
+    merged = {**merged, "token_usage": get_usage()}
+    st.session_state.draft = merged
     return merged
 
 
@@ -119,6 +142,8 @@ def show_dashboard(result: dict) -> None:
         score = result.get("score", -1)
         st.metric("Score", f"{score}/100" if score >= 0 else "n/a", border=True)
         st.metric("Gates", "pass" if result.get("gates_ok") else "fail", border=True)
+        tokens = (result.get("token_usage") or {}).get("total_tokens", 0)
+        st.metric("Tokens", f"{tokens:,}" if tokens else "n/a", border=True)
     with st.container(horizontal=True, vertical_alignment="center"):
         st.caption(f"Workspace: `{result['workspace']}`")
         if result.get("template"):
@@ -192,6 +217,7 @@ def show_dashboard(result: dict) -> None:
             ":material/account_tree: Tree",
             ":material/difference: Diff",
             ":material/science: Tests",
+            ":material/terminal: Terminal",
             ":material/article: Report",
             ":material/forum: History",
             ":material/edit_note: Plan",
@@ -223,18 +249,22 @@ def show_dashboard(result: dict) -> None:
                 st.markdown(result["quality"])
     if tabs[3].open:
         with tabs[3]:
-            st.markdown(render_report(result, files=names))
+            terminal_log = read_terminal_log(workspace) if workspace.is_dir() else ""
+            st.code(terminal_log or "(no terminal commands run)", language="text")
     if tabs[4].open:
         with tabs[4]:
-            st.markdown(render_history(result))
+            st.markdown(render_report(result, files=names))
     if tabs[5].open:
         with tabs[5]:
+            st.markdown(render_history(result))
+    if tabs[6].open:
+        with tabs[6]:
             if result.get("analysis"):
                 with st.expander("Codebase map", icon=":material/hub:"):
                     st.code(result["analysis"], language="markdown")
             st.markdown(result.get("plan") or "_empty_")
-    if tabs[6].open:
-        with tabs[6]:
+    if tabs[7].open:
+        with tabs[7]:
             st.markdown(result.get("docs") or "_empty_")
             if result.get("evaluation"):
                 st.markdown(result["evaluation"])
@@ -327,6 +357,7 @@ if st.session_state.phase == "input":
                     database=str(st.session_state.get("database") or "none"),
                     policy=policy_from_ui(),
                 )
+                save_run(Path(scaffold["workspace"]), scaffold)
                 st.session_state.draft = scaffold
                 st.session_state.result = scaffold
                 st.session_state.error = None
@@ -363,9 +394,7 @@ if st.session_state.phase == "input":
                 validate_selection(provider, model)
                 folder = project_dir.strip() or None
                 if autonomous_mode:
-                    live_file = st.empty()
-                    status = st.status("Autonomous run working", expanded=True)
-                    events = run_autonomous(
+                    st.session_state.autonomous_gen = run_autonomous(
                         task.strip(),
                         provider,
                         model,
@@ -375,17 +404,7 @@ if st.session_state.phase == "input":
                         policy=policy_from_ui(),
                         max_goal_cycles=int(goal_cycles_budget),
                     )
-                    merged = pump(events, status, live_file)
-                    st.session_state.draft = merged
-                    st.session_state.result = merged
-                    st.session_state.error = merged.get("error") or None
-                    st.session_state.phase = "done"
-                    status.update(
-                        label="Autonomous run failed"
-                        if merged.get("error")
-                        else "Autonomous run done",
-                        state="error" if merged.get("error") else "complete",
-                    )
+                    st.session_state.phase = "autonomous"
                     st.rerun()
                 else:
                     with st.spinner("Planner working"):
@@ -506,6 +525,40 @@ if st.session_state.phase == "review" and st.session_state.draft:
             st.session_state.error = str(exc)
             status.update(label="Verify failed", state="error")
 
+if st.session_state.phase == "autonomous" and st.session_state.get("autonomous_gen") is not None:
+    st.subheader("Autonomous run")
+    draft = st.session_state.draft or {}
+    usage = get_usage()
+    st.caption(
+        f"Cycle {draft.get('goal_cycles', 0)}/{draft.get('max_goal_cycles', MAX_GOAL_CYCLES)} "
+        f"· {usage['total_tokens']} tokens"
+    )
+    if draft.get("log"):
+        with st.container(border=True, height=240):
+            show_feed(draft)
+    if st.button("Stop", type="primary", icon=":material/stop:"):
+        st.session_state.autonomous_gen = None
+        st.session_state.result = {**draft, "token_usage": get_usage()}
+        st.session_state.phase = "done"
+        st.rerun()
+    else:
+        try:
+            _node, _update, merged = next(st.session_state.autonomous_gen)
+            st.session_state.draft = merged
+        except StopIteration:
+            merged = {**(st.session_state.draft or {}), "token_usage": get_usage()}
+            st.session_state.autonomous_gen = None
+            st.session_state.draft = merged
+            st.session_state.result = merged
+            st.session_state.error = merged.get("error") or None
+            st.session_state.phase = "done"
+        except Exception as exc:
+            st.session_state.autonomous_gen = None
+            st.session_state.error = str(exc)
+            st.session_state.result = draft
+            st.session_state.phase = "done"
+        st.rerun()
+
 if st.session_state.error:
     st.error(st.session_state.error)
 
@@ -532,3 +585,11 @@ if st.session_state.phase == "done":
         st.session_state.result = None
         st.session_state.error = None
         st.rerun()
+
+active_workspace = visible.get("workspace") if visible else None
+if not active_workspace and st.session_state.phase == "autonomous" and st.session_state.draft:
+    active_workspace = st.session_state.draft.get("workspace")
+if active_workspace:
+    st.query_params["run"] = Path(active_workspace).name
+elif "run" in st.query_params:
+    del st.query_params["run"]

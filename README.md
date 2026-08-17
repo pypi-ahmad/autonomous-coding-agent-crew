@@ -29,7 +29,7 @@ detect → plan + vote → parallel specialists + tester → reviewer → gates 
 
 ## Features
 
-- **Dashboard** — live activity feed, file tree, diff, test metrics, execution timeline
+- **Dashboard** — live activity feed, file tree, diff, terminal output, test metrics, token usage, execution timeline
 - **Parallel build** — backend / frontend / database / tester run together when the stack isn't simple
 - **Reviewer** — architecture pass, separate from the debugger; one revise loop
 - **Votes + conflicts** — plan APPROVE/REVISE majority; overlapping file writes logged and merged by role priority

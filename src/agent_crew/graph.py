@@ -24,7 +24,7 @@ from agent_crew.collab import (
     tally_votes,
     write_conflicts,
 )
-from agent_crew.crew import FILE_FORMAT, build_agents
+from agent_crew.crew import FILE_FORMAT, build_agents, reset_usage
 from agent_crew.llm import make_llm
 from agent_crew.memory import format_lessons, recall, remember_outcome
 from agent_crew.policy import Policy, policy_from_state, set_policy
@@ -838,6 +838,7 @@ def initial_state(
     found = apply_hint(detect_stack(workspace), template, database)
     pol = policy or Policy()
     set_policy(pol)
+    reset_usage()
     return {
         "task": task,
         "provider": provider,

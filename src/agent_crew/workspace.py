@@ -382,6 +382,18 @@ def append_crew_log(workspace: Path, line: str) -> None:
         handle.write(line.rstrip() + "\n")
 
 
+def append_terminal_log(workspace: Path, command: str, *, ok: bool, output: str) -> None:
+    log_path = workspace / "terminal.log"
+    status = "ok" if ok else "failed"
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write(f"$ {command}\n[{status}]\n{output.rstrip()}\n\n")
+
+
+def read_terminal_log(workspace: Path) -> str:
+    path = workspace / "terminal.log"
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+
 def copy_project(src: Path, dest: Path) -> None:
     dest.mkdir(parents=True, exist_ok=True)
 

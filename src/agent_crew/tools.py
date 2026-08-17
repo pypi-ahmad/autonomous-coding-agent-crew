@@ -9,7 +9,14 @@ from agent_crew.codeintel import analyze_project, rename_symbol, search_code, se
 from agent_crew.quality import evaluate_quality
 from agent_crew.shell import run_terminal
 from agent_crew.stack import detect_stack, format_stack, practices_for
-from agent_crew.workspace import create_file, list_files, read_file, run_python, write_file
+from agent_crew.workspace import (
+    append_terminal_log,
+    create_file,
+    list_files,
+    read_file,
+    run_python,
+    write_file,
+)
 
 
 class _WsTool(BaseTool):
@@ -104,6 +111,7 @@ class RunTerminalTool(_WsTool):
 
     def _run(self, command: str) -> str:
         ok, output = run_terminal(Path(self.workspace), command)
+        append_terminal_log(Path(self.workspace), command, ok=ok, output=output)
         status = "ok" if ok else "failed"
         return f"{status}\n{output}"
 

@@ -62,9 +62,21 @@ In **Locked files**, enter comma-separated globs (e.g. `README.md, tests/*, *.to
 
 Toggle **Autonomous (no pauses)** in the sidebar's Autonomy section before submitting the task. Instead of pausing for plan approval and diff review, the crew runs planner → coder → reviewer → tester → debugger → documenter → evaluate on a loop, re-planning with any leftover sub-tasks until the score/gates pass or the **Goal cycle budget** (default 2, max 20) is used up. Good for a well-scoped goal you're willing to let run unattended; bad if you want to steer mid-run — for that, leave autonomous mode off.
 
-### Resume a run after closing the app
+While it's running, a **Stop** button ends the loop cleanly after the current step and takes you straight to the results dashboard with whatever's done so far — nothing is lost, the workspace and its `run.json` checkpoint are on disk either way.
+
+### Track token usage
+
+Every LLM call's token usage is tallied automatically — no setup needed. Watch it live under the current-step caption while a run streams, or check the **Tokens** metric on the results dashboard once it's done. This works for every provider, including Ollama; there's no dollar-cost estimate since this project doesn't ship pricing tables for its models.
+
+### Read what agents ran in the terminal
+
+Every `run_terminal` call an agent makes (pip installs, pytest, git, node) is logged to a **Terminal** tab on the results dashboard, in the order it happened — separate from the Tests tab, which only shows the tester's own pytest output.
+
+### Resume a run after closing the app, or recover from a refresh
 
 On the input screen, pick a run from **Resume checkpoint** and click **Load checkpoint**. It reads `runs/<id>/run.json` and drops you back into the plan/review/done phase the run last checkpointed at.
+
+A browser refresh recovers automatically instead: the current run's id lives in the page URL (`?run=<id>`), so reloading the page re-opens the same run at its last checkpoint without you picking anything. An autonomous run's *loop* can't resume mid-stream after a refresh (the in-flight generator is gone), but nothing is lost — you land on the last checkpoint and can continue manually from there, same as any other run.
 
 ### Use past-run lessons
 
