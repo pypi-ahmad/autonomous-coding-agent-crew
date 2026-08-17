@@ -52,7 +52,7 @@ def safe_file(workspace: Path, relative: str) -> Path:
 def list_files(workspace: Path) -> list[str]:
     root = workspace.resolve()
     names: list[str] = []
-    for path in sorted(root.rglob("*")):
+    for path in root.rglob("*"):
         if not path.is_file():
             continue
         if any(part in SKIP_DIR for part in path.parts):
@@ -60,6 +60,7 @@ def list_files(workspace: Path) -> list[str]:
         if path.suffix == ".pyc":
             continue
         names.append(path.relative_to(root).as_posix())
+    names.sort(key=str.lower)
     return names
 
 
