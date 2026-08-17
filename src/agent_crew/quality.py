@@ -245,6 +245,7 @@ def evaluate_quality(
     *,
     tests_ok: bool,
     coverage: float,
+    min_coverage: float = MIN_COVERAGE,
 ) -> Quality:
     policy = get_policy()
     if policy.dry_run:
@@ -256,7 +257,7 @@ def evaluate_quality(
     if need_integration:
         levels_ok = levels_ok and bool(levels["integration"])
     cover_needed = bool(impl)
-    coverage_ok = (not cover_needed) or (coverage >= MIN_COVERAGE)
+    coverage_ok = (not cover_needed) or (coverage >= min_coverage)
     lint_ok, lint_out = lint_workspace(workspace)
     types_ok, types_out = typecheck_workspace(workspace)
     sec_ok, sec_out = security_scan(workspace)
@@ -288,18 +289,20 @@ def evaluate_quality(
         q.fail = "perf"
     else:
         q.fail = ""
-    q.report = _render(q, lint_out, types_out, sec_out, perf_out)
+    q.report = _render(q, lint_out, types_out, sec_out, perf_out, min_coverage=min_coverage)
     return q
 
 
-def _render(q: Quality, lint: str, types: str, sec: str, perf: str) -> str:
+def _render(  # noqa: PLR0913
+    q: Quality, lint: str, types: str, sec: str, perf: str, *, min_coverage: float = MIN_COVERAGE
+) -> str:
     cover = f"{q.coverage:.0f}%" if q.coverage >= 0 else "n/a"
     lines = [
         "# Quality",
         "",
         f"- Gates: {'PASS' if q.ok else 'FAIL'} ({q.fail or 'all clear'})",
         f"- Tests: {'ok' if q.tests_ok else 'fail'}",
-        f"- Coverage: {cover} (min {MIN_COVERAGE:.0f}%)",
+        f"- Coverage: {cover} (min {min_coverage:.0f}%)",
         (
             f"- Levels: unit={len(q.levels.get('unit', []))} "
             f"integration={len(q.levels.get('integration', []))} "

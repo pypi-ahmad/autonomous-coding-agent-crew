@@ -86,6 +86,18 @@ No action needed — every run's outcome is scored, classified win/fail, and app
 
 In the sidebar's **Permissions** section: **Allow writes** gates file writes, **Allow terminal** gates any shell command, **Allow pip** gates `pip install` specifically. Turn any off before approving a plan to run with that capability disabled for the rest of the job.
 
+### Tune safety limits per run
+
+Open the sidebar's **Configuration** expander before submitting a task. **Max debug attempts** overrides how many tester-fail → debugger loops a run gets before it fails closed and rolls back (default 3). **Coverage floor %** overrides the quality gate's minimum coverage (default 70%) — lower it for a quick prototype, raise it for something you want held to a stricter bar.
+
+### Clean up a run, or reset everything
+
+On the results dashboard, **Clean project** deletes that run's workspace from disk — click it once to arm, then **Confirm delete?** (or **Cancel**). In the sidebar's **Environment** expander, **Reset environment** does the same for every run under `runs/`, including saved memory — same arm/confirm flow. Both keep the rotating `agent-crew.log`.
+
+### Where to look when something goes wrong
+
+Every run's own artifacts (`crew.log`, `terminal.log`, `trace.jsonl`, `run.json`) live in that run's `runs/<id>/` folder. For app-wide issues — a retry that fell back, an exception in the LangGraph pipeline itself — check `runs/agent-crew.log`, a rotating log (2MB × 3 backups) that persists across runs and is explicitly kept by both Clean project and Reset environment.
+
 ### Export the finished project
 
 Use the **Download zip** / **Download report** / **Download history** buttons on the results dashboard. The zip contains the whole workspace, including `HEALTH.md`, `QUALITY.md`, and `EVAL.md` if the run produced them.

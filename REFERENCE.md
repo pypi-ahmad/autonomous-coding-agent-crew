@@ -39,6 +39,10 @@ From `.env.example`, loaded by `settings.py` via `python-dotenv`:
 | `agnes` | `agnes-2.5-flash` | OpenAI-compatible wire format at `https://apihub.agnes-ai.com/v1` |
 | `google` | `gemini-3.5-flash-lite`, `gemini-3.7-flash` | Routed via `gemini/<model>` |
 
+## Per-run configurable limits
+
+Two of the settings constants below are also per-run overrides, threaded through `initial_state()` / `run_plan()` / `run_autonomous()` as `max_debug_attempts` and `min_coverage`, and exposed in the UI's sidebar **Configuration** expander. `route_after_tester`, `tester_node`, and `quality.py::evaluate_quality` all read `state.get(...)`, falling back to the `settings.py` constant when unset. The rest (`MAX_TEST_REWRITES`, `MAX_REVIEW_ATTEMPTS`, `PERF_BUDGET_S`) are fixed, not exposed as UI overrides.
+
 ## Settings constants (`settings.py`)
 
 | Constant | Value | Governs |
@@ -169,6 +173,19 @@ Only these command heads are allowed; everything else raises `ValueError`. Unsaf
 
 `reset_usage()` / `get_usage()` / `_add_usage(usage)` wrap a `ContextVar` (same pattern as `policy.py`'s `Policy`), so usage accumulates across an entire run — including every autonomous re-planning cycle — without threading a new field through `CrewState`. `run_role` calls `_add_usage` with `CrewOutput.token_usage` (a `crewai.types.usage_metrics.UsageMetrics`) after every `crew.kickoff()`. `initial_state()` calls `reset_usage()` once per new run. No dollar-cost estimate is computed — this project doesn't ship a pricing table for its models.
 
+## App-wide logging (`logging_setup.py`)
+
+`configure_logging()` sets up a `RotatingFileHandler` on the `"agent_crew"` logger, writing to `runs/agent-crew.log` (2MB × 3 backups). Idempotent (checks `logger.handlers` before adding another). Called once at Streamlit startup and wired into `_stream()`'s exception handler (`graph.py`) and `safe_role`'s fallback path (`reliability.py`), so pipeline errors and role-call fallbacks are recorded app-wide, not just in a run's own `crew.log`. Survives both `delete_workspace` (single run) and `reset_all_runs` (everything) — the latter explicitly skips any `agent-crew.log*` file rather than trying to delete an open file handle (a `PermissionError` on Windows).
+
+## Environment / cleanup (`workspace.py`)
+
+| Function | Does |
+| --- | --- |
+| `delete_workspace(workspace)` | `shutil.rmtree` on one run's directory |
+| `reset_all_runs(root=RUNS_DIR)` | Deletes every entry under `root` except `agent-crew.log*`; returns the count removed |
+
+Both are wired to the dashboard's **Clean project** and the sidebar's **Reset environment**, each behind an arm-then-confirm button pair (not a checkbox bound to `session_state` — Streamlit forbids reassigning a widget-bound key after that widget has rendered in the same script run).
+
 ## Module index
 
 | Module | Job |
@@ -188,5 +205,6 @@ Only these command heads are allowed; everything else raises `ValueError`. Unsaf
 | `src/agent_crew/codeintel.py` | Cached project summary, code/semantic search, symbol rename, traceback blame |
 | `src/agent_crew/memory.py` | JSONL memory store: recall past outcomes, record win/fail lessons |
 | `src/agent_crew/reliability.py` | Role-call retry/backoff, fallback plan, heuristic scoring |
+| `src/agent_crew/logging_setup.py` | App-wide rotating log (`runs/agent-crew.log`) |
 | `src/agent_crew/settings.py` | Providers, models, tunable constants |
 | `streamlit_app.py` | Dashboard UI |

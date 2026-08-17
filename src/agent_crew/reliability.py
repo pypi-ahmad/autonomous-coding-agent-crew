@@ -4,6 +4,7 @@ import time
 from collections.abc import Callable
 
 from agent_crew.crew import run_role
+from agent_crew.logging_setup import get_logger
 
 COVER_HIGH = 80
 COVER_MID = 50
@@ -49,6 +50,7 @@ def safe_role(
     try:
         return run_role_retry(agent, description, expected_output, sleeper=sleeper), ""
     except Exception as exc:
+        get_logger().warning("Role call failed, using fallback: %s", exc)
         return fallback, str(exc)
 
 

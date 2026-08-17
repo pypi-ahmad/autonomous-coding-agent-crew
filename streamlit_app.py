@@ -14,11 +14,13 @@ from agent_crew.graph import (
     stream_verify,
 )
 from agent_crew.llm import models_for, validate_selection
+from agent_crew.logging_setup import configure_logging
 from agent_crew.memory import format_lessons, recall, remember
 from agent_crew.policy import Policy
-from agent_crew.settings import MAX_GOAL_CYCLES, active_providers
+from agent_crew.settings import MAX_DEBUG_ATTEMPTS, MAX_GOAL_CYCLES, MIN_COVERAGE, active_providers
 from agent_crew.templates import DATABASE_NAMES, TEMPLATE_NAMES
 from agent_crew.workspace import (
+    delete_workspace,
     file_tree,
     list_files,
     list_runs,
@@ -29,6 +31,7 @@ from agent_crew.workspace import (
     read_trace,
     render_history,
     render_report,
+    reset_all_runs,
     save_run,
     zip_workspace,
 )
@@ -48,6 +51,7 @@ LANG = {
     ".prisma": "text",
 }
 
+configure_logging()
 st.set_page_config(page_title="Agent crew", page_icon=":material/terminal:", layout="wide")
 st.session_state.setdefault("result", None)
 st.session_state.setdefault("error", None)
@@ -127,7 +131,14 @@ def show_tree(workspace: Path) -> None:
         return
     pick = st.selectbox("Open file", names, key=f"tree_{workspace.name}")
     suffix = Path(pick).suffix.lower()
-    st.code(read_file(workspace, pick), language=LANG.get(suffix, "text"))
+    try:
+        content = read_file(workspace, pick)
+    except UnicodeDecodeError:
+        st.caption("(binary file, cannot display)")
+    except OSError as exc:
+        st.caption(f"(could not read file: {exc})")
+    else:
+        st.code(content, language=LANG.get(suffix, "text"))
 
 
 def show_dashboard(result: dict) -> None:
@@ -302,6 +313,23 @@ with st.sidebar:
         placeholder="README.md, tests/*, *.toml",
         help="Comma-separated globs. Agents cannot overwrite matches.",
     )
+    with st.expander("Configuration", icon=":material/tune:"):
+        max_debug_attempts = st.number_input(
+            "Max debug attempts",
+            min_value=1,
+            max_value=10,
+            value=MAX_DEBUG_ATTEMPTS,
+            key="max_debug_attempts",
+            help="Tester-fail -> debugger loop bound before it fails closed and rolls back.",
+        )
+        min_coverage = st.number_input(
+            "Coverage floor %",
+            min_value=0,
+            max_value=100,
+            value=int(MIN_COVERAGE),
+            key="min_coverage",
+            help="Quality gate: coverage below this fails the run (when there's code to cover).",
+        )
     st.subheader("Autonomy")
     autonomous_mode = st.toggle(
         "Autonomous (no pauses)",
@@ -325,6 +353,28 @@ with st.sidebar:
     if lessons:
         with st.expander("Memory", icon=":material/bookmark:"):
             st.caption(lessons)
+    with st.expander("Environment", icon=":material/settings_backup_restore:"):
+        st.caption(
+            "Deletes every run under `runs/`, including memory. "
+            "Keeps the rotating agent-crew.log. Cannot be undone."
+        )
+        st.session_state.setdefault("armed_reset", False)
+        if st.session_state.armed_reset:
+            with st.container(horizontal=True):
+                if st.button("Confirm reset?", icon=":material/warning:", type="primary"):
+                    reset_all_runs()
+                    st.session_state.armed_reset = False
+                    st.session_state.phase = "input"
+                    st.session_state.draft = None
+                    st.session_state.result = None
+                    st.session_state.error = None
+                    st.rerun()
+                if st.button("Cancel", icon=":material/close:", key="cancel_reset"):
+                    st.session_state.armed_reset = False
+                    st.rerun()
+        elif st.button("Reset environment", icon=":material/restart_alt:"):
+            st.session_state.armed_reset = True
+            st.rerun()
 
 if st.session_state.phase == "input":
     saved = list_runs()
@@ -356,6 +406,8 @@ if st.session_state.phase == "input":
                     template=str(st.session_state.get("template") or "blank"),
                     database=str(st.session_state.get("database") or "none"),
                     policy=policy_from_ui(),
+                    max_debug_attempts=int(max_debug_attempts),
+                    min_coverage=float(min_coverage),
                 )
                 save_run(Path(scaffold["workspace"]), scaffold)
                 st.session_state.draft = scaffold
@@ -403,6 +455,8 @@ if st.session_state.phase == "input":
                         database=str(st.session_state.get("database") or "none"),
                         policy=policy_from_ui(),
                         max_goal_cycles=int(goal_cycles_budget),
+                        max_debug_attempts=int(max_debug_attempts),
+                        min_coverage=float(min_coverage),
                     )
                     st.session_state.phase = "autonomous"
                     st.rerun()
@@ -416,6 +470,8 @@ if st.session_state.phase == "input":
                             template=str(st.session_state.get("template") or "blank"),
                             database=str(st.session_state.get("database") or "none"),
                             policy=policy_from_ui(),
+                            max_debug_attempts=int(max_debug_attempts),
+                            min_coverage=float(min_coverage),
                         )
                     if draft["error"]:
                         st.session_state.error = draft["error"]
@@ -579,12 +635,36 @@ if st.session_state.phase == "done":
             }
         )
         st.caption("Lesson saved.")
-    if st.button("New task", icon=":material/add:"):
-        st.session_state.phase = "input"
-        st.session_state.draft = None
-        st.session_state.result = None
-        st.session_state.error = None
-        st.rerun()
+    st.session_state.setdefault("armed_clean", False)
+    with st.container(horizontal=True):
+        if st.button("New task", icon=":material/add:"):
+            st.session_state.phase = "input"
+            st.session_state.draft = None
+            st.session_state.result = None
+            st.session_state.error = None
+            st.rerun()
+        if st.session_state.armed_clean:
+            if st.button(
+                "Confirm delete?", icon=":material/warning:", type="primary", key="confirm_clean"
+            ):
+                if visible and visible.get("workspace"):
+                    delete_workspace(Path(visible["workspace"]))
+                st.session_state.armed_clean = False
+                st.session_state.phase = "input"
+                st.session_state.draft = None
+                st.session_state.result = None
+                st.session_state.error = None
+                st.rerun()
+            if st.button("Cancel", icon=":material/close:", key="cancel_clean"):
+                st.session_state.armed_clean = False
+                st.rerun()
+        elif st.button(
+            "Clean project",
+            icon=":material/delete_sweep:",
+            help="Delete this run's workspace from disk.",
+        ):
+            st.session_state.armed_clean = True
+            st.rerun()
 
 active_workspace = visible.get("workspace") if visible else None
 if not active_workspace and st.session_state.phase == "autonomous" and st.session_state.draft:

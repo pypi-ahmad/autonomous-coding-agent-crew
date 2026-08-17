@@ -26,6 +26,7 @@ from agent_crew.collab import (
 )
 from agent_crew.crew import FILE_FORMAT, build_agents, reset_usage
 from agent_crew.llm import make_llm
+from agent_crew.logging_setup import get_logger
 from agent_crew.memory import format_lessons, recall, remember_outcome
 from agent_crew.policy import Policy, policy_from_state, set_policy
 from agent_crew.quality import evaluate_quality, format_levels, write_quality
@@ -126,6 +127,8 @@ class CrewState(TypedDict):
     autonomous: bool
     goal_cycles: int
     max_goal_cycles: int
+    max_debug_attempts: int
+    min_coverage: float
     subtasks: str
     deps: str
     rollback: str
@@ -135,10 +138,11 @@ class CrewState(TypedDict):
 def route_after_tester(state: CrewState) -> Literal["debugger", "documenter", "tester"]:
     if state.get("error"):
         return "documenter"
+    max_debug = int(state.get("max_debug_attempts") or MAX_DEBUG_ATTEMPTS)
     if "gates_ok" not in state:
-        done = state["tests_passed"] or state["debug_attempts"] >= MAX_DEBUG_ATTEMPTS
+        done = state["tests_passed"] or state["debug_attempts"] >= max_debug
         return "documenter" if done else "debugger"
-    if state["gates_ok"] or state.get("debug_attempts", 0) >= MAX_DEBUG_ATTEMPTS:
+    if state["gates_ok"] or state.get("debug_attempts", 0) >= max_debug:
         return "documenter"
     fail = state.get("gate_fail") or ""
     rewrites = int(state.get("test_rewrites") or 0)
@@ -472,7 +476,8 @@ def tester_node(state: CrewState) -> dict:
                     f"Request:\n{state['task']}\n{_context(state)}\n"
                     f"Files:\n{snapshot(workspace)}\n\n"
                     f"Gate: {state.get('gate_fail') or 'first pass'}. "
-                    f"Coverage: {state.get('coverage', -1)}. Min {MIN_COVERAGE:.0f}%.\n"
+                    f"Coverage: {state.get('coverage', -1)}. "
+                    f"Min {float(state.get('min_coverage') or MIN_COVERAGE):.0f}%.\n"
                     "Write unit tests (test_*.py), edge tests (test_edge_*.py), "
                     "and integration tests (test_integration_*.py) if more than one module. "
                     "Optional test_perf_*.py for hot functions. "
@@ -494,7 +499,7 @@ def tester_node(state: CrewState) -> dict:
                 line = f"Tester green but mutant survived{cover_note}"
             else:
                 line = f"Tester passed ({mutant}){cover_note}"
-        elif state["debug_attempts"] >= MAX_DEBUG_ATTEMPTS:
+        elif state["debug_attempts"] >= int(state.get("max_debug_attempts") or MAX_DEBUG_ATTEMPTS):
             write_repro(workspace, output)
             line = f"Wrote REPRO.md (fail-closed){cover_note}"
         else:
@@ -503,6 +508,7 @@ def tester_node(state: CrewState) -> dict:
             workspace,
             tests_ok=passed,
             coverage=coverage if coverage is not None else -1.0,
+            min_coverage=float(state.get("min_coverage") or MIN_COVERAGE),
         )
         with suppress(OSError, ValueError):
             write_quality(workspace, quality)
@@ -510,7 +516,7 @@ def tester_node(state: CrewState) -> dict:
         if quality.ok:
             with suppress(OSError, FileNotFoundError):
                 git_savepoint(workspace, "chore: green")
-        elif state["debug_attempts"] >= MAX_DEBUG_ATTEMPTS:
+        elif state["debug_attempts"] >= int(state.get("max_debug_attempts") or MAX_DEBUG_ATTEMPTS):
             write_repro(workspace, quality.report)
             with suppress(OSError, FileNotFoundError):
                 rollback = git_rollback(workspace)
@@ -823,6 +829,8 @@ def initial_state(
     policy: Policy | None = None,
     autonomous: bool = False,
     max_goal_cycles: int = MAX_GOAL_CYCLES,
+    max_debug_attempts: int = MAX_DEBUG_ATTEMPTS,
+    min_coverage: float = MIN_COVERAGE,
 ) -> CrewState:
     workspace = RUNS_DIR / uuid4().hex[:8]
     workspace.mkdir(parents=True, exist_ok=True)
@@ -892,6 +900,8 @@ def initial_state(
         "autonomous": autonomous,
         "goal_cycles": 0,
         "max_goal_cycles": max_goal_cycles,
+        "max_debug_attempts": max_debug_attempts,
+        "min_coverage": min_coverage,
         "subtasks": "",
         "deps": "",
         "rollback": "",
@@ -909,6 +919,8 @@ def run_plan(
     template: str = "blank",
     database: str = "none",
     policy: Policy | None = None,
+    max_debug_attempts: int = MAX_DEBUG_ATTEMPTS,
+    min_coverage: float = MIN_COVERAGE,
 ) -> CrewState:
     return build_plan_graph().invoke(  # type: ignore[return-value]
         initial_state(
@@ -920,6 +932,8 @@ def run_plan(
             template=template,
             database=database,
             policy=policy,
+            max_debug_attempts=max_debug_attempts,
+            min_coverage=min_coverage,
         )
     )
 
@@ -935,6 +949,7 @@ def _stream(graph: object, state: CrewState) -> Iterator[tuple[str, dict, CrewSt
                     save_run(Path(merged["workspace"]), dict(merged))
                 yield str(node), payload, merged
     except Exception as exc:
+        get_logger().exception("Pipeline error in %s: %s", merged.get("workspace", ""), exc)
         merged = {**merged, "error": str(exc), "log": [*merged["log"], f"error: {exc}"]}
         yield "error", {"error": str(exc)}, merged
     with suppress(OSError, TypeError, ValueError):
@@ -967,6 +982,8 @@ def run_autonomous(
     database: str = "none",
     policy: Policy | None = None,
     max_goal_cycles: int = MAX_GOAL_CYCLES,
+    max_debug_attempts: int = MAX_DEBUG_ATTEMPTS,
+    min_coverage: float = MIN_COVERAGE,
 ) -> Iterator[tuple[str, dict, CrewState]]:
     state = initial_state(
         task,
@@ -979,6 +996,8 @@ def run_autonomous(
         policy=policy,
         autonomous=True,
         max_goal_cycles=max_goal_cycles,
+        max_debug_attempts=max_debug_attempts,
+        min_coverage=min_coverage,
     )
     yield from stream_auto(state)
 

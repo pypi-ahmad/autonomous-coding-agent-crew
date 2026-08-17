@@ -40,6 +40,8 @@ detect → plan + vote → parallel specialists + tester → reviewer → gates 
 - **Memory + eval** — recall past lessons across runs; score /100 with `EVAL.md`
 - **Reliability** — retries with backoff, fallback plan, resume from `run.json`, git-based rollback on exhausted debug attempts
 - **Permissions** — write / terminal / pip toggles, dry-run, locked file globs
+- **Configuration** — max debug attempts and coverage floor tunable per run; one-click Clean project / Reset environment
+- **Rotating log** — `runs/agent-crew.log`, app-wide, survives a "Reset environment"
 - **Export** — project zip, `REPORT.md`, `HEALTH.md`, `QUALITY.md`, `HISTORY.md`; missing deps auto-installed into `requirements.txt`
 
 ## How it works

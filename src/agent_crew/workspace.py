@@ -493,6 +493,32 @@ def list_runs(root: Path | None = None) -> list[Path]:
     return sorted(found, key=lambda path: path.stat().st_mtime, reverse=True)[:12]
 
 
+def delete_workspace(workspace: Path) -> None:
+    shutil.rmtree(workspace, ignore_errors=True)
+
+
+def reset_all_runs(root: Path | None = None) -> int:
+    """Delete every run directory under ``root``. Skips currently-open log
+    files (e.g. the rotating agent-crew.log) rather than crashing on the
+    PermissionError Windows raises for a locked file."""
+    base = root if root is not None else RUNS_DIR
+    if not base.is_dir():
+        return 0
+    count = 0
+    for entry in base.iterdir():
+        if entry.name.startswith("agent-crew.log"):
+            continue
+        try:
+            if entry.is_dir():
+                shutil.rmtree(entry)
+            else:
+                entry.unlink()
+        except OSError:
+            continue
+        count += 1
+    return count
+
+
 def zip_workspace(workspace: Path) -> bytes:
     buf = BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as archive:
