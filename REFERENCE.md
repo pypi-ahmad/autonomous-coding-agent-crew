@@ -14,7 +14,7 @@ Dictionary-style reference for `agent-crew`. For the narrative system design, se
 | `uv run ruff format .` / `uv run ruff check .` | Format / lint |
 | `uv run ty check src/` | Type-check |
 | `uv run pip-audit .` | Dependency vulnerability scan |
-| `make dev` / `make lint` / `make test` / `make audit` / `make hooks` | Same, via `Makefile` |
+| `make dev` / `make lint` / `make format` / `make test` / `make build` / `make audit` / `make hooks` / `make hooks-install` | Same, via `Makefile` |
 
 ## Environment variables
 

@@ -133,7 +133,7 @@ uv run pytest
 uv run pip-audit .
 ```
 
-Makefile targets: `make dev`, `make lint`, `make test`, `make audit`, `make hooks`.
+Makefile targets: `make dev`, `make lint`, `make format`, `make test`, `make build`, `make audit`, `make hooks`, `make hooks-install`.
 
 CI (`.github/workflows/ci.yml`) runs format, lint, types, tests, pip-audit, and prek. Dependabot updates pip and GitHub Actions weekly with a 7-day cooldown.
 
