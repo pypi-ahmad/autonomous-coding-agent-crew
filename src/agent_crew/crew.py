@@ -94,8 +94,9 @@ def build_agents(llm: LLM, workspace: Path | None = None) -> dict[str, Agent]:
             "Debugger",
             "Fix failing tests and quality gates with the smallest change that works.",
             "You read stack frames, QUALITY.md, and blamed files. Patch root causes. "
-            "Clear lint, types, security, and perf gates. "
-            "Temporary prints are allowed; remove them. Do not weaken tests.",
+            "Clear lint, types, security, and perf gates. Use run_terminal with "
+            "'git log' or 'git diff' if you need to see what the last coder pass "
+            "actually changed. Temporary prints are allowed; remove them. Do not weaken tests.",
             impl,
         ),
         "documenter": _agent(

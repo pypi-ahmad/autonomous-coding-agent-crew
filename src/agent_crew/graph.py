@@ -366,11 +366,22 @@ def coder_node(state: CrewState) -> dict:
         deps = ", ".join(pkgs) if pkgs else dep_note
         impl_text = "\n\n".join(text for role, text in outputs.items() if role != "tester" and text)
         test_text = outputs.get("tester") or state.get("tests") or ""
-        with suppress(OSError, FileNotFoundError):
-            git_commit(workspace, "feat: parallel coder pass")
         diff = ""
         with suppress(OSError, FileNotFoundError):
             diff = git_diff(workspace)
+        commit_message = "feat: parallel coder pass"
+        if diff.strip():
+            summary, fail = safe_role(
+                agents.get("documenter") or next(iter(agents.values())),
+                "Write ONE line, conventional-commit style (feat:/fix:/refactor:/test:/chore:), "
+                f"summarizing this diff. No body, no quotes, under 72 chars.\n\n{diff[:4000]}",
+                "One line, e.g. 'feat: add health endpoint'.",
+                commit_message,
+            )
+            if not fail:
+                commit_message = summary.strip().splitlines()[0][:120] or commit_message
+        with suppress(OSError, FileNotFoundError):
+            git_commit(workspace, commit_message)
         extra = _append(
             state,
             (

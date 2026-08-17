@@ -99,7 +99,7 @@ class RunTerminalTool(_WsTool):
     description: str = (
         "Run an allowlisted command: python <file.py>, pytest, pip install <pkg>, "
         "node <file.js>, node --test, python -m ruff check, python -m ty check, "
-        "git status|diff|log. No shell metacharacters."
+        "git status|diff|log|branch. No shell metacharacters."
     )
 
     def _run(self, command: str) -> str:
