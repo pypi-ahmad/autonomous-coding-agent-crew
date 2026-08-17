@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+from agent_crew.logging_setup import get_logger
 from agent_crew.settings import RUNS_DIR
 
 TOKEN = re.compile(r"[a-z0-9_]+")
@@ -29,8 +30,15 @@ def load_memory() -> list[dict]:
     path = memory_path()
     if not path.is_file():
         return []
-    lines = path.read_text(encoding="utf-8").splitlines()
-    return [json.loads(line) for line in lines if line.strip()]
+    rows: list[dict] = []
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except ValueError:
+            get_logger().warning("Skipping malformed memory.jsonl line %d", lineno)
+    return rows
 
 
 def recall(task: str, limit: int = 5, kind: str = "") -> list[dict]:

@@ -14,7 +14,7 @@ from agent_crew.graph import (
     stream_verify,
 )
 from agent_crew.llm import models_for, validate_selection
-from agent_crew.logging_setup import configure_logging
+from agent_crew.logging_setup import configure_logging, get_logger
 from agent_crew.memory import format_lessons, recall, remember
 from agent_crew.policy import Policy
 from agent_crew.settings import MAX_DEBUG_ATTEMPTS, MAX_GOAL_CYCLES, MIN_COVERAGE, active_providers
@@ -69,11 +69,15 @@ if (
     if run_id:
         match = next((p for p in list_runs() if p.parent.name == run_id), None)
         if match is not None:
-            recovered = load_run(match.parent)
-            checkpoint_phase = resume_phase(str(recovered.get("checkpoint", "")))
-            st.session_state.draft = recovered
-            st.session_state.result = recovered if checkpoint_phase == "done" else None
-            st.session_state.phase = checkpoint_phase
+            try:
+                recovered = load_run(match.parent)
+            except (OSError, ValueError) as exc:
+                get_logger().warning("Could not recover run %s: %s", run_id, exc)
+            else:
+                checkpoint_phase = resume_phase(str(recovered.get("checkpoint", "")))
+                st.session_state.draft = recovered
+                st.session_state.result = recovered if checkpoint_phase == "done" else None
+                st.session_state.phase = checkpoint_phase
 
 st.title("Autonomous coding agent crew")
 st.caption("Phase 9. Parallel specialists, reviewer, votes, conflict merge.")
@@ -382,13 +386,18 @@ if st.session_state.phase == "input":
         labels = [path.parent.name for path in saved]
         pick = st.selectbox("Resume checkpoint", ["(new run)", *labels])
         if pick != "(new run)" and st.button("Load checkpoint", icon=":material/history:"):
-            loaded = load_run(saved[labels.index(pick)].parent)
-            st.session_state.draft = loaded
-            st.session_state.result = (
-                loaded if resume_phase(str(loaded.get("checkpoint", ""))) == "done" else None
-            )
-            st.session_state.phase = resume_phase(str(loaded.get("checkpoint", "")))
-            st.rerun()
+            try:
+                loaded = load_run(saved[labels.index(pick)].parent)
+            except (OSError, ValueError) as exc:
+                st.session_state.error = f"Could not load checkpoint {pick!r}: {exc}"
+                get_logger().warning("Could not load checkpoint %s: %s", pick, exc)
+            else:
+                st.session_state.draft = loaded
+                st.session_state.result = (
+                    loaded if resume_phase(str(loaded.get("checkpoint", ""))) == "done" else None
+                )
+                st.session_state.phase = resume_phase(str(loaded.get("checkpoint", "")))
+                st.rerun()
     with st.container(horizontal=True):
         st.selectbox("Stack template", list(TEMPLATE_NAMES), key="template")
         st.selectbox("Database", list(DATABASE_NAMES), key="database")

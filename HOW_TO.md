@@ -94,6 +94,10 @@ Open the sidebar's **Configuration** expander before submitting a task. **Max de
 
 On the results dashboard, **Clean project** deletes that run's workspace from disk — click it once to arm, then **Confirm delete?** (or **Cancel**). In the sidebar's **Environment** expander, **Reset environment** does the same for every run under `runs/`, including saved memory — same arm/confirm flow. Both keep the rotating `agent-crew.log`.
 
+### If a run seems stuck
+
+Every LLM call has a 5-minute timeout (`LLM_TIMEOUT_S` in `settings.py`) — if a provider stalls or Ollama hangs, the current step fails and the retry/fallback logic in `safe_role` takes over instead of the whole run hanging forever. Terminal commands, tests, and git calls are bounded too, and a timeout kills the whole process tree (not just the direct process), so a stuck `pip install` build or test worker can't linger in the background.
+
 ### Where to look when something goes wrong
 
 Every run's own artifacts (`crew.log`, `terminal.log`, `trace.jsonl`, `run.json`) live in that run's `runs/<id>/` folder. For app-wide issues — a retry that fell back, an exception in the LangGraph pipeline itself — check `runs/agent-crew.log`, a rotating log (2MB × 3 backups) that persists across runs and is explicitly kept by both Clean project and Reset environment.

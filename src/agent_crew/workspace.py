@@ -5,9 +5,12 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
+import tempfile
 import zipfile
+from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 
@@ -65,9 +68,21 @@ def read_file(workspace: Path, relative: str) -> str:
 
 
 def _write_raw(workspace: Path, relative: str, content: str) -> str:
+    """Write atomically (temp file + os.replace) so a crash or a concurrent
+    writer to the same path can never leave a truncated/corrupt file --
+    matters most for run.json, read back on every checkpoint resume."""
     path = safe_file(workspace, relative)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+        tmp_path.replace(path)
+    except OSError:
+        with suppress(OSError):
+            tmp_path.unlink()
+        raise
     return path.relative_to(workspace.resolve()).as_posix()
 
 
@@ -164,6 +179,54 @@ def _sandbox_env(workspace: Path | None = None) -> dict[str, str]:
     return env
 
 
+def _kill_tree(proc: subprocess.Popen) -> None:
+    """Kill proc and any children it spawned (pip/pytest can trigger native
+    builds or worker subprocesses that survive a plain proc.kill())."""
+    if sys.platform == "win32":
+        taskkill = shutil.which("taskkill")
+        if taskkill:
+            subprocess.run(  # noqa: S603
+                [taskkill, "/F", "/T", "/PID", str(proc.pid)],
+                capture_output=True,
+                check=False,
+            )
+        else:
+            proc.kill()
+    else:
+        with suppress(ProcessLookupError, OSError):
+            os.killpg(proc.pid, signal.SIGKILL)
+    with suppress(subprocess.TimeoutExpired):
+        proc.wait(timeout=5)
+
+
+def run_subprocess(
+    argv: list[str], *, cwd: Path, timeout: int, env: dict[str, str] | None = None
+) -> tuple[bool, str]:
+    """subprocess.run-alike that kills the whole process tree on timeout
+    instead of only the direct child. Cross-platform: a new process group on
+    Windows (taskkill /T), a new session on POSIX (killpg)."""
+    on_windows = sys.platform == "win32"
+    try:
+        proc: subprocess.Popen[str] = subprocess.Popen(  # noqa: S603
+            argv,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=env,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if on_windows else 0,
+            start_new_session=not on_windows,
+        )
+    except OSError as exc:
+        return False, str(exc)
+    try:
+        output: str = proc.communicate(timeout=timeout)[0]
+    except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        return False, f"Command timeout after {timeout}s"
+    return proc.returncode == 0, (output or "").strip()[-8000:]
+
+
 def run_python(workspace: Path, relative: str, timeout: int = SANDBOX_TIMEOUT) -> tuple[bool, str]:
     policy = get_policy()
     if not policy.allow_terminal:
@@ -177,20 +240,9 @@ def run_python(workspace: Path, relative: str, timeout: int = SANDBOX_TIMEOUT) -
         raise FileNotFoundError(relative)
     rel = path.relative_to(workspace.resolve()).as_posix()
     # ponytail: cwd jail + stripped env + timeout. No OS container.
-    try:
-        proc = subprocess.run(  # noqa: S603
-            [sys.executable, rel],
-            cwd=workspace,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=False,
-            env=_sandbox_env(workspace),
-        )
-    except subprocess.TimeoutExpired:
-        return False, f"Sandbox timeout after {timeout}s"
-    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
-    return proc.returncode == 0, output[-8000:]
+    return run_subprocess(
+        [sys.executable, rel], cwd=workspace, timeout=timeout, env=_sandbox_env(workspace)
+    )
 
 
 def parse_coverage(output: str) -> float | None:
@@ -331,7 +383,7 @@ def run_tests(workspace: Path) -> tuple[bool, str]:
 
 
 def _run_pytest(workspace: Path) -> tuple[bool, str]:
-    proc = subprocess.run(
+    return run_subprocess(
         [
             sys.executable,
             "-m",
@@ -342,14 +394,9 @@ def _run_pytest(workspace: Path) -> tuple[bool, str]:
             "--cov-report=term-missing",
         ],
         cwd=workspace,
-        capture_output=True,
-        text=True,
         timeout=90,
-        check=False,
         env=_sandbox_env(workspace),
     )
-    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
-    return proc.returncode == 0, output[-8000:]
 
 
 def _run_node_tests(workspace: Path, files: list[str]) -> tuple[bool, str]:
@@ -360,20 +407,7 @@ def _run_node_tests(workspace: Path, files: list[str]) -> tuple[bool, str]:
     for rel in files[:20]:
         safe_file(workspace, rel)
         argv.append(rel)
-    try:
-        proc = subprocess.run(  # noqa: S603
-            argv,
-            cwd=workspace,
-            capture_output=True,
-            text=True,
-            timeout=90,
-            check=False,
-            env=_sandbox_env(workspace),
-        )
-    except subprocess.TimeoutExpired:
-        return False, "node --test timeout after 90s"
-    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
-    return proc.returncode == 0, output[-8000:]
+    return run_subprocess(argv, cwd=workspace, timeout=90, env=_sandbox_env(workspace))
 
 
 def append_crew_log(workspace: Path, line: str) -> None:
@@ -551,17 +585,8 @@ def _git(workspace: Path, *args: str) -> tuple[int, str]:
     git = shutil.which("git")
     if not git:
         return 1, "git not found"
-    proc = subprocess.run(  # noqa: S603
-        [git, *args],
-        cwd=workspace,
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=False,
-        env=_sandbox_env(),
-    )
-    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
-    return proc.returncode, output[-8000:]
+    ok, output = run_subprocess([git, *args], cwd=workspace, timeout=30, env=_sandbox_env())
+    return (0 if ok else 1), output
 
 
 def git_init(workspace: Path) -> str:

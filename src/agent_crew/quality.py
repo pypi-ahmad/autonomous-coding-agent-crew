@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import ast
 import re
-import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
@@ -10,7 +9,7 @@ from pathlib import Path
 
 from agent_crew.policy import get_policy
 from agent_crew.settings import MIN_COVERAGE, PERF_BUDGET_S
-from agent_crew.workspace import _write_raw, is_test_path, list_files, read_file
+from agent_crew.workspace import _write_raw, is_test_path, list_files, read_file, run_subprocess
 
 SECRET = re.compile(r"(api[_-]?key|secret|password|token)\s*=\s*['\"][^'\"]+['\"]", re.IGNORECASE)
 TOOL_MISSING = 127
@@ -117,20 +116,11 @@ def typecheck_workspace(workspace: Path) -> tuple[bool, str]:
 
 
 def _tool(workspace: Path, argv: list[str]) -> tuple[int, str]:
-    try:
-        proc = subprocess.run(  # noqa: S603
-            argv,
-            cwd=workspace,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-        )
-    except FileNotFoundError:
-        return 127, "tool not found"
-    except subprocess.TimeoutExpired:
-        return 1, "tool timeout"
-    return proc.returncode, ((proc.stdout or "") + (proc.stderr or "")).strip()[-4000:]
+    # argv[0] is always sys.executable, so it can't itself go missing; an
+    # uninstalled tool module surfaces as a nonzero exit + "No module named",
+    # which callers already check for below.
+    ok, out = run_subprocess(argv, cwd=workspace, timeout=60)
+    return (0 if ok else 1), out[-4000:]
 
 
 def _syntax_only(workspace: Path) -> tuple[bool, str]:

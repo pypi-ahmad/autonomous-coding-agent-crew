@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import shlex
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 from agent_crew.policy import get_policy
-from agent_crew.workspace import _sandbox_env, safe_file
+from agent_crew.workspace import _sandbox_env, run_subprocess, safe_file
 
 UNSAFE = set(";|&`$<>\n")
 PIP_DENY = {"-r", "--requirement", "--target", "--prefix", "--editable", "-e"}
@@ -96,17 +95,4 @@ def run_terminal(workspace: Path, command: str) -> tuple[bool, str]:
         raise ValueError("Terminal disabled by policy")
     if policy.dry_run:
         return True, "dry-run: " + " ".join(argv)
-    try:
-        proc = subprocess.run(  # noqa: S603
-            argv,
-            cwd=workspace,
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-            env=_sandbox_env(workspace),
-        )
-    except subprocess.TimeoutExpired:
-        return False, "Command timeout after 120s"
-    output = ((proc.stdout or "") + (proc.stderr or "")).strip()
-    return proc.returncode == 0, output[-8000:]
+    return run_subprocess(argv, cwd=workspace, timeout=120, env=_sandbox_env(workspace))

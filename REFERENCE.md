@@ -54,6 +54,7 @@ Two of the settings constants below are also per-run overrides, threaded through
 | `MIN_COVERAGE` | 70.0 | Coverage-floor quality gate |
 | `MIN_LOOP_SCORE` | 50 | Score an autonomous run needs to stop early |
 | `PERF_BUDGET_S` | 2.0 | Perf-probe quality gate budget |
+| `LLM_TIMEOUT_S` | 300 | Per-call timeout on every `LLM(...)` (all four providers) — an LLM call used to have none at all |
 
 ## Agent roles (`crew.py::build_agents`)
 
@@ -176,6 +177,15 @@ Only these command heads are allowed; everything else raises `ValueError`. Unsaf
 ## App-wide logging (`logging_setup.py`)
 
 `configure_logging()` sets up a `RotatingFileHandler` on the `"agent_crew"` logger, writing to `runs/agent-crew.log` (2MB × 3 backups). Idempotent (checks `logger.handlers` before adding another). Called once at Streamlit startup and wired into `_stream()`'s exception handler (`graph.py`) and `safe_role`'s fallback path (`reliability.py`), so pipeline errors and role-call fallbacks are recorded app-wide, not just in a run's own `crew.log`. Survives both `delete_workspace` (single run) and `reset_all_runs` (everything) — the latter explicitly skips any `agent-crew.log*` file rather than trying to delete an open file handle (a `PermissionError` on Windows).
+
+## Process/file hardening (`workspace.py`)
+
+| Function | Does |
+| --- | --- |
+| `run_subprocess(argv, cwd=, timeout=, env=)` | Shared `subprocess.run`-alike used by every terminal/test/git call site. On timeout, kills the whole process tree — not just the direct child — via `taskkill /F /T` on Windows or `killpg(SIGKILL)` on POSIX (a bare `.kill()` only kills the direct child; a `pip install` triggering a native build, or a test spawning a worker, would otherwise survive) |
+| `_write_raw(workspace, relative, content)` | Every file write in the app (generated project files, `run.json`, `REPORT.md`, ...) goes through this. Writes to a unique temp file in the same directory, then `Path.replace()` — atomic on both platforms, so a crash or a concurrent writer to the same path can never leave a truncated/corrupt file |
+
+`memory.py::load_memory` skips (and logs) individually malformed `memory.jsonl` lines instead of raising — one corrupted line no longer breaks every future recall. `streamlit_app.py`'s two `load_run()` call sites (manual "Load checkpoint" and refresh-recovery) both catch `OSError`/`ValueError` instead of crashing the script on a missing/corrupt `run.json`.
 
 ## Environment / cleanup (`workspace.py`)
 
