@@ -1,6 +1,6 @@
 [project]
 name = "agent-crew"
-version = "0.2.0"
+version = "0.2.1"
 description = "Autonomous Coding Agent Crew (CrewAI + LangGraph + Streamlit)"
 readme = "README.md"
 authors = [

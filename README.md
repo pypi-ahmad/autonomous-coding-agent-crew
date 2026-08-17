@@ -27,7 +27,7 @@ https://github.com/pypi-ahmad/autonomous-coding-agent-crew
 - [Development](#development)
 - [Docs](#docs) — links to every other doc in this repo
 
-`agent-crew` `0.2.0` is a local-first, hybrid CrewAI + LangGraph coding crew with a Streamlit dashboard. Describe a coding task or a high-level goal; a planner, parallel coder specialists (backend/frontend/database as needed), a reviewer, a tester, a debugger, and a documenter take turns through a LangGraph pipeline, with CrewAI agents doing the reasoning at each step. Point it at a blank folder with a template, or an existing project — it detects the stack either way. You approve the plan, review the diff after coding, then quality gates (tests, coverage, lint, types, security, perf) decide whether the run goes to the debugger or to docs. Everything lands in `runs/<id>/`.
+`agent-crew` `0.2.1` is a local-first, hybrid CrewAI + LangGraph coding crew with a Streamlit dashboard. Describe a coding task or a high-level goal; a planner, parallel coder specialists (backend/frontend/database as needed), a reviewer, a tester, a debugger, and a documenter take turns through a LangGraph pipeline, with CrewAI agents doing the reasoning at each step. Point it at a blank folder with a template, or an existing project — it detects the stack either way. You approve the plan, review the diff after coding, then quality gates (tests, coverage, lint, types, security, perf) decide whether the run goes to the debugger or to docs. Everything lands in `runs/<id>/`.
 
 ```text
 detect → plan + vote → parallel specialists + tester → reviewer → gates ↔ debug → docs
