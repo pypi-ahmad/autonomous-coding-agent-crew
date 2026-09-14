@@ -1,3 +1,13 @@
+"""LangGraph pipeline: nodes, routing, graph builders, and public entry points.
+
+Responsibility: define CrewState, all node functions, conditional routing, and the six graph
+builders;
+expose run_plan, run_autonomous, stream_build, and related streaming helpers.
+Must not: import Streamlit.
+Next: streamlit_app.py calls stream_build/stream_auto/run_plan for live streaming;
+      tests call run_plan/run_build directly.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -135,6 +145,9 @@ class CrewState(TypedDict):
     health: str
 
 
+# route_after_tester is the most complex routing point: it handles the normal debug loop,
+# the test-rewrite branch (coverage/missing_tests gate with rewrites < MAX_TEST_REWRITES),
+# and the exhausted-attempts path that goes straight to documenter.
 def route_after_tester(state: CrewState) -> Literal["debugger", "documenter", "tester"]:
     if state.get("error"):
         return "documenter"
@@ -227,6 +240,8 @@ def _roster_for(state: CrewState) -> tuple[str, ...]:
 
 
 def _bind(state: CrewState) -> None:
+    # Every node calls _bind first so the Policy ContextVar reflects the current run's settings.
+    # collab.run_parallel then copy_context()s from here into each worker thread.
     set_policy(policy_from_state(state))
 
 
@@ -731,6 +746,8 @@ def build_verify_graph() -> object:
     return graph.compile()
 
 
+# build_exec_graph and build_graph are dead code: no callers exist in this codebase.
+# stream_build composes stream_code + stream_verify instead.
 def build_exec_graph() -> object:
     graph = StateGraph(CrewState)
     graph.add_node("coder", coder_node)
@@ -939,6 +956,8 @@ def run_plan(
 
 
 def _stream(graph: object, state: CrewState) -> Iterator[tuple[str, dict, CrewState]]:
+    # Node exceptions are caught here and surfaced as state["error"] rather than propagating,
+    # so the Streamlit UI sees a degraded result instead of a crash.
     merged: CrewState = state
     try:
         for chunk in graph.stream(state, stream_mode="updates"):  # type: ignore[attr-defined]

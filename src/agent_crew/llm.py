@@ -1,3 +1,10 @@
+"""LLM factory for each supported provider.
+
+Responsibility: create crewai.LLM instances; list available Ollama models.
+Must not: write files or own any mutable process state.
+Next: crew.build_agents passes the LLM to each Agent constructor.
+"""
+
 from __future__ import annotations
 
 import json
@@ -26,6 +33,7 @@ def list_ollama_models() -> list[str]:
         with urllib.request.urlopen(url, timeout=3) as response:  # noqa: S310
             payload = json.loads(response.read().decode("utf-8"))
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+        # Swallowed intentionally: Ollama not running should not crash the UI.
         return []
     names: list[str] = []
     for item in payload.get("models", []):
@@ -72,6 +80,8 @@ def make_llm(provider: str, model: str, timeout: float = LLM_TIMEOUT_S) -> LLM:
             kwargs["custom_openai"] = True
         return LLM(**kwargs)
     if provider == "agnes":
+        # Agnes exposes an OpenAI-compatible API; custom_openai=True tells CrewAI not to
+        # validate the model name against OpenAI's own catalogue.
         return LLM(
             model=f"openai/{AGNES_MODEL}",
             api_key=require_env("AGNES_API_KEY"),

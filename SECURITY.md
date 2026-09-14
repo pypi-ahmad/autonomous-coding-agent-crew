@@ -12,7 +12,7 @@ Out of scope: the security of your own machine, your own API keys, your own `.en
 
 Please do **not** open a public issue for security reports. Instead use GitHub's private [Security Advisory](https://github.com/pypi-ahmad/autonomous-coding-agent-crew/security/advisories/new) form, or email the maintainer via the address on their GitHub profile.
 
-Include: affected file/module, reproduction steps, and impact. Expect an acknowledgment within a few days — this is a volunteer-maintained project, not a funded security team.
+Include: affected file/module, reproduction steps, and impact. Expect an acknowledgment within a few days; this is a volunteer-maintained project, not a funded security team.
 
 ## Disclosure
 

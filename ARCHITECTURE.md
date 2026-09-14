@@ -1,8 +1,8 @@
-# Architecture — Autonomous Coding Agent Crew
+# Architecture: Autonomous Coding Agent Crew
 
-Local-first snapshot of the checkout on disk at commit `4bb5446` (`main`). Every claim cites a file. Gaps are marked `[INFERRED]` or `[UNVERIFIED]`. This replaces an earlier version of this document written when the repo was five roles, no git remote, and 4 tests — none of that is true anymore; see [Confidence assessment](#confidence-assessment) for what changed.
+Local-first snapshot of the checkout on disk at commit `4bb5446` (`main`). Every claim cites a file. Gaps are marked `[INFERRED]` or `[UNVERIFIED]`. This replaces an earlier version of this document written when the repo was five roles, no git remote, and 4 tests; none of that is true anymore. See [Confidence assessment](#confidence-assessment) for what changed.
 
-## Part 1 — Whole-repo technical deep-dive
+## Part 1: Whole-repo technical deep-dive
 
 ### What this repository is
 
@@ -109,7 +109,7 @@ No Python 2, no `requirements.txt` for this repo's own code (templates.py genera
 
 ---
 
-## Part 2 — Context & ecosystem
+## Part 2: Context & ecosystem
 
 ### Local checkout identity
 
@@ -122,7 +122,7 @@ No Python 2, no `requirements.txt` for this repo's own code (templates.py genera
 | License | MIT ([`LICENSE`](LICENSE)) |
 | Authors | Ahmad Mujtaba ([`pyproject.toml`](pyproject.toml)#L6-8) |
 
-**[Resolved contradiction]** The prior version of this document recorded "no remote," "branch `master` (unborn)," and "no license." All three are now false — the repo has since been pushed to GitHub, moved to `main`, and gained an MIT license. Rather than describe both states, this document only reflects the current one; git history is the record of the old one if it's ever needed.
+**[Resolved contradiction]** The prior version of this document recorded "no remote," "branch `master` (unborn)," and "no license." All three are now false; the repo has since been pushed to GitHub, moved to `main`, and gained an MIT license. Rather than describe both states, this document only reflects the current one; git history is the record of the old one if it's ever needed.
 
 ### Agent / contributor docs
 
@@ -150,7 +150,7 @@ Standalone app. Depends on CrewAI, LangGraph, Streamlit, optional Ollama daemon,
 
 ---
 
-## Part 3 — Architectural blueprint
+## Part 3: Architectural blueprint
 
 ### Tech-stack summary
 
@@ -189,7 +189,7 @@ flowchart TB
   PKG --> MEM
 ```
 
-Still one process; Streamlit and the graph share it. Unlike the first snapshot, a run no longer has to block that process end-to-end — autonomous mode advances one LangGraph node per Streamlit script rerun (`st.session_state.autonomous_gen`, [`streamlit_app.py`](streamlit_app.py) autonomous-phase block), so a "Stop" click can actually interrupt it between steps.
+Still one process; Streamlit and the graph share it. Unlike the first snapshot, a run no longer has to block that process end-to-end; autonomous mode advances one LangGraph node per Streamlit script rerun (`st.session_state.autonomous_gen`, [`streamlit_app.py`](streamlit_app.py) autonomous-phase block), so a "Stop" click can actually interrupt it between steps.
 
 **Level 3 — One autonomous cycle (the most complex path)**
 
@@ -250,7 +250,7 @@ streamlit_app.py  →  graph.py  →  crew.py, llm.py, collab.py, quality.py, re
 #### ADR: LangGraph owns control flow; CrewAI owns one role at a time
 - **Context:** Need a debug loop with a cap, and later, parallel specialists and an optional autonomous loop, none of which a single multi-task `Crew` expresses cleanly.
 - **Decision:** Six `StateGraph` builders share one `CrewState` and a common set of node functions ([`graph.py`](src/agent_crew/graph.py)#L694-817). Conditional edges (`route_after_tester`, `route_after_reviewer`, `route_after_evaluate`) are the only branching logic; everything else is a straight edge.
-- **Consequence:** Adding a new pipeline shape (e.g. "code review only, then stop") means writing one more small `build_*_graph()` function, not touching existing ones — this is exactly how `stream_auto`/`run_autonomous` were added without disturbing `run_plan`/`stream_code`/`stream_verify`.
+- **Consequence:** Adding a new pipeline shape (e.g. "code review only, then stop") means writing one more small `build_*_graph()` function, not touching existing ones; this is exactly how `stream_auto`/`run_autonomous` were added without disturbing `run_plan`/`stream_code`/`stream_verify`.
 
 #### ADR: Multiple graph builders instead of one graph with more conditional edges
 - **Context:** The UI has genuinely different pause points (plan-approval, diff-review, no pauses at all) that a single graph with runtime flags would make hard to reason about.
@@ -263,7 +263,7 @@ streamlit_app.py  →  graph.py  →  crew.py, llm.py, collab.py, quality.py, re
 
 #### ADR: `### FILE:` markdown is still the write protocol, now alongside live tool calls
 - **Decision:** [`crew.py`](src/agent_crew/crew.py) `FILE_FORMAT`; parser [`workspace.py`](src/agent_crew/workspace.py) `FILE_BLOCK`/`apply_files`. But agents with `impl` tools can *also* call `write_file`/`create_file` directly mid-task ([`tools.py`](src/agent_crew/tools.py) `WriteFileTool`/`CreateFileTool`).
-- **Consequence:** Two write paths exist side by side. `_write_raw`'s atomic replace (added this session) protects both equally; a same-path collision between two concurrently-running roster members is possible in principle but low-blast-radius (last writer wins, no corruption) rather than prevented outright with a lock — a deliberate, documented trade-off, not an oversight.
+- **Consequence:** Two write paths exist side by side. `_write_raw`'s atomic replace (added this session) protects both equally; a same-path collision between two concurrently-running roster members is possible in principle but low-blast-radius (last writer wins, no corruption) rather than prevented outright with a lock. That is a deliberate, documented trade-off.
 
 #### ADR: Allowlisted models; Ollama listed live; a real per-call timeout
 - **Decision:** [`settings.py`](src/agent_crew/settings.py)#L18-21; [`llm.py`](src/agent_crew/llm.py)#L37-84. `LLM_TIMEOUT_S=300` is new this session — verified against the installed `crewai.LLM` source that a `timeout` kwarg exists and was previously never set.
@@ -316,7 +316,7 @@ streamlit_app.py  →  graph.py  →  crew.py, llm.py, collab.py, quality.py, re
 | `build_auto_graph` (#L760) | planner → coder → reviewer → tester → debugger → documenter → evaluate, looping back to planner via `route_after_evaluate` | `stream_auto`/`run_autonomous` — Autonomous mode |
 | `build_graph` (#L792) | Same nodes as `build_auto_graph` but no loop-back edge (`evaluate` → `END` unconditionally) | **Confirmed dead code** — same check, zero call sites; an earlier, non-looping version left in place |
 
-**The autonomous loop was dead code until this session.** `build_auto_graph` and `route_after_evaluate` existed, but `initial_state` never set `autonomous`/`goal_cycles`, so the loop-back edge was unreachable from the UI. Fixed by threading `autonomous: bool` and `max_goal_cycles` through `initial_state`/`run_autonomous`, and adding the sidebar toggle. This is the kind of gap that's easy to miss by reading the graph-builder code in isolation — it only shows up by tracing whether anything actually *calls* the builder with the right initial state, which is exactly why this doc calls out `build_exec_graph`/`build_graph` above as likely still in that state.
+**The autonomous loop was dead code until this session.** `build_auto_graph` and `route_after_evaluate` existed, but `initial_state` never set `autonomous`/`goal_cycles`, so the loop-back edge was unreachable from the UI. Fixed by threading `autonomous: bool` and `max_goal_cycles` through `initial_state`/`run_autonomous`, and adding the sidebar toggle. This is the kind of gap that's easy to miss by reading the graph-builder code in isolation; it only shows up by tracing whether anything actually *calls* the builder with the right initial state, which is exactly why this doc calls out `build_exec_graph`/`build_graph` above as likely still in that state.
 
 **State machine (autonomous path, the most complex one):**
 
@@ -342,17 +342,17 @@ stateDiagram-v2
 
 **Gates.** `evaluate_quality` ([`quality.py`](src/agent_crew/quality.py)#L233) runs five checks — tests, coverage (`coverage >= min_coverage`, now a param not a constant), lint (`ruff`), types (`ty`), security (`security_scan`), perf (`probe_perf`) — plus test-level completeness (unit/edge/integration present). The first failing gate, in that fixed order, sets `Quality.fail`, which `route_after_tester` and `route_after_evaluate` both read to decide whether to keep debugging, roll back, or stop.
 
-**Reliability.** `run_role_retry` ([`reliability.py`](src/agent_crew/reliability.py)#L20) retries a CrewAI role call up to 3 times with exponential backoff; `safe_role` (#L42) wraps that with a fallback string and now also logs a warning to the app-wide rotating log on failure — visibility that didn't exist before this session. `heuristic_score` (#L57) turns tests-passed/coverage/error/mutant-survival into the 0-100 score shown on the dashboard and stored via `remember_outcome`.
+**Reliability.** `run_role_retry` ([`reliability.py`](src/agent_crew/reliability.py)#L20) retries a CrewAI role call up to 3 times with exponential backoff; `safe_role` (#L42) wraps that with a fallback string and now also logs a warning to the app-wide rotating log on failure, adding visibility that didn't exist before this session. `heuristic_score` (#L57) turns tests-passed/coverage/error/mutant-survival into the 0-100 score shown on the dashboard and stored via `remember_outcome`.
 
-**Self-improvement loop.** `remember_outcome` ([`memory.py`](src/agent_crew/memory.py)#L79) classifies a finished run as `"win"` (tests passed and score ≥ `WIN_SCORE_THRESHOLD=70`) or `"fail"`, appending to `runs/memory.jsonl`. `recall` (#L44) does a token-overlap search over that file for the *next* task, and `graph.py`'s `planner_node` splices matching lessons into the planner's own prompt — a real feedback loop, not just a log. `load_memory` (#L29) skips (and logs) individually malformed lines rather than raising, a fix from this session's hardening pass — before that, one corrupted line permanently broke every future recall until someone manually edited the file.
+**Self-improvement loop.** `remember_outcome` ([`memory.py`](src/agent_crew/memory.py)#L79) classifies a finished run as `"win"` (tests passed and score ≥ `WIN_SCORE_THRESHOLD=70`) or `"fail"`, appending to `runs/memory.jsonl`. `recall` (#L44) does a token-overlap search over that file for the *next* task, and `graph.py`'s `planner_node` splices matching lessons into the planner's own prompt — a real feedback loop, not just a log. `load_memory` (#L29) skips (and logs) individually malformed lines rather than raising, a fix from this session's hardening pass; before that, one corrupted line permanently broke every future recall until someone manually edited the file.
 
-**Rollback as a safety net.** `git_savepoint`/`git_rollback` ([`workspace.py`](src/agent_crew/workspace.py)#L648,652) commit on a green gate and `git reset --hard` to the last green commit when debug attempts are exhausted — this is genuine file-content rollback, distinct from (and complementary to) `run.json` checkpoint resume.
+**Rollback as a safety net.** `git_savepoint`/`git_rollback` ([`workspace.py`](src/agent_crew/workspace.py)#L648,652) commit on a green gate and `git reset --hard` to the last green commit when debug attempts are exhausted; this is genuine file-content rollback, distinct from (and complementary to) `run.json` checkpoint resume.
 
 ### 3. Process/file hardening (`workspace.py`)
 
 This subsystem didn't exist as a distinct concern before this session's deep bug-hunt; it's included here because it's the part most likely to look like an unremarkable implementation detail while actually encoding several non-obvious, hard-won correctness properties.
 
-**Atomic writes.** `_write_raw` ([`workspace.py`](src/agent_crew/workspace.py)#L71-87) is the single function every file write in the app goes through — generated project files, `run.json`, `REPORT.md`, everything. It writes to a unique temp file in the same directory (`tempfile.mkstemp`) then `Path.replace()`, which is atomic on both Windows and POSIX. Before this, a crash mid-write could leave a truncated `run.json`, permanently breaking checkpoint resume for that run.
+**Atomic writes.** `_write_raw` ([`workspace.py`](src/agent_crew/workspace.py)#L71-87) is the single function every file write in the app goes through: generated project files, `run.json`, `REPORT.md`, everything. It writes to a unique temp file in the same directory (`tempfile.mkstemp`) then `Path.replace()`, which is atomic on both Windows and POSIX. Before this, a crash mid-write could leave a truncated `run.json`, permanently breaking checkpoint resume for that run.
 
 **Tree-safe process termination.** `run_subprocess` (#L203-228) replaces six separate `subprocess.run(timeout=...)` call sites (pytest, node --test, git, the sandboxed python runner, the terminal tool, ruff/ty). On timeout, `_kill_tree` (#L183-200) kills the *whole process tree*, not just the direct child: `taskkill /F /T /PID` on Windows, `killpg(SIGKILL)` on POSIX (which requires launching the child with `start_new_session=True` so it gets its own process group to kill). Without this, a `pip install` that triggers a native build, or a test that spawns a worker process, would survive a plain `.kill()` and keep running orphaned.
 

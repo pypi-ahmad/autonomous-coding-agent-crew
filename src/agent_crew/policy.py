@@ -1,3 +1,13 @@
+"""Permission flags propagated via a ContextVar.
+
+Responsibility: define Policy (frozen dataclass) and expose get/set helpers; parse locked-glob
+strings.
+Must not: perform any I/O.
+Next: graph._bind() calls set_policy at the start of every node; collab.run_parallel uses
+copy_context()
+      so Policy propagates correctly into each worker thread.
+"""
+
 from __future__ import annotations
 
 from contextvars import ContextVar
@@ -23,6 +33,8 @@ class Policy:
         return False
 
 
+# None means "not yet set"; get_policy() returns a default Policy() in that case so callers
+# never need to handle None explicitly.
 _POLICY: ContextVar[Policy | None] = ContextVar("policy", default=None)
 
 

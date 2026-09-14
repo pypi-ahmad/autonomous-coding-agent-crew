@@ -1,3 +1,13 @@
+"""Append-only JSONL memory for cross-run lesson recall.
+
+Responsibility: persist run outcomes to runs/memory.jsonl; recall past lessons by token-overlap
+score.
+Must not: write to any path other than runs/memory.jsonl; the file is never compacted by first-party
+code.
+Next: graph.planner_node calls recall() to inject past lessons; graph.evaluate_node calls
+remember_outcome().
+"""
+
 from __future__ import annotations
 
 import json
@@ -37,6 +47,7 @@ def load_memory() -> list[dict]:
         try:
             rows.append(json.loads(line))
         except ValueError:
+            # A single corrupt line must not break all future recall; log and skip.
             get_logger().warning("Skipping malformed memory.jsonl line %d", lineno)
     return rows
 

@@ -1,3 +1,11 @@
+"""Workspace stack detector and per-framework practice strings.
+
+Responsibility: infer language/framework/database from file manifests and source content;
+return practice strings that agents include in their prompts.
+Must not: write files.
+Next: graph.initial_state calls detect_stack/apply_hint; tools.DetectStackTool exposes it to agents.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -142,6 +150,7 @@ def detect_stack(workspace: Path) -> Stack:
 
 
 def _framework(text: str, joined: str, name_set: set[str]) -> str:
+    # nextjs must be checked before react: a Next.js project always has react too.
     checks = (
         ("nextjs", "next.config" in joined or '"next"' in text),
         (

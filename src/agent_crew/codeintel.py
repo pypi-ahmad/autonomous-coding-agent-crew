@@ -1,3 +1,12 @@
+"""AST/regex code analysis, semantic search, and traceback attribution.
+
+Responsibility: summarize workspace symbols; answer code-search queries; map traceback frames to
+source files.
+Must not: write files.
+Next: tools.py exposes analyze_project/search_code/search_semantic as agent tools;
+      graph.debugger_node calls blamed_snapshot to focus the debugger on relevant files.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -85,6 +94,8 @@ def _summarize_file(workspace: Path, rel: str) -> str:
     )
 
 
+# Cache is keyed on (workspace_root, tuple_of_(rel, mtime_ns)) so any file change
+# invalidates the entry. Cache is valid for this process lifetime only; a restart clears it.
 @lru_cache(maxsize=32)
 def _analyze_cached(root: str, stamp: tuple[tuple[str, int], ...]) -> str:
     workspace = Path(root)

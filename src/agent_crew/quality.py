@@ -1,3 +1,13 @@
+"""Quality gate evaluations and the Quality result dataclass.
+
+Responsibility: run gates in fixed order (tests → missing_tests → coverage → lint → types → security
+→ perf);
+produce a Quality result; write QUALITY.md.
+Must not: launch processes outside workspace.run_subprocess.
+Next: graph.tester_node calls evaluate_quality; route_after_tester reads Quality.gate_fail to decide
+the next node.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -200,6 +210,8 @@ def _time_module(workspace: Path, rel: str) -> tuple[bool, float, str]:
         src = read_file(workspace, rel)
         tree = ast.parse(src)
         ns: dict[str, object] = {}
+        # exec(compile(...)) is used instead of importlib to avoid polluting sys.modules
+        # and to keep the probe side-effect-free (no __name__ == "__main__" execution).
         exec(compile(tree, rel, "exec"), ns)  # noqa: S102
     except Exception as exc:
         return True, 0.0, f"{rel}: skip ({exc.__class__.__name__})"
@@ -242,6 +254,8 @@ def evaluate_quality(
         return Quality(fail="dry-run", report="dry-run: quality skipped")
     levels = classify_tests(workspace)
     impl = _impl_py(workspace)
+    # Gate order is fixed: tests → missing_tests → coverage → lint → types → security → perf.
+    # The first failing gate sets Quality.fail and stops the sequence.
     need_integration = len(impl) >= MULTI_MODULE
     levels_ok = bool(levels["unit"]) and bool(levels["edge"])
     if need_integration:

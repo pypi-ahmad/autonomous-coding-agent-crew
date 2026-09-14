@@ -1,4 +1,4 @@
-# Modernization plan — Autonomous Coding Agent Crew
+# Modernization plan: Autonomous Coding Agent Crew
 
 Cite current state from [ARCHITECTURE.md](ARCHITECTURE.md). This file is the forward plan.
 

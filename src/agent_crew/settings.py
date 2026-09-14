@@ -1,3 +1,11 @@
+"""Global constants and environment-variable accessors.
+
+Responsibility: single source of truth for all numeric limits and env-var reads; loaded once at
+import.
+Must not: call LLMs, write files, or import any first-party agent_crew module.
+Next: logging_setup.py (uses RUNS_DIR); every other module imports the constants it needs.
+"""
+
 from __future__ import annotations
 
 import os
@@ -6,6 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[2]
+# .env is read at import time so every module that does `from settings import …` gets live values.
 load_dotenv(ROOT / ".env")
 
 PROVIDERS = ("ollama", "openai", "agnes", "google")

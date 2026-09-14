@@ -54,7 +54,7 @@ Two of the settings constants below are also per-run overrides, threaded through
 | `MIN_COVERAGE` | 70.0 | Coverage-floor quality gate |
 | `MIN_LOOP_SCORE` | 50 | Score an autonomous run needs to stop early |
 | `PERF_BUDGET_S` | 2.0 | Perf-probe quality gate budget |
-| `LLM_TIMEOUT_S` | 300 | Per-call timeout on every `LLM(...)` (all four providers) — an LLM call used to have none at all |
+| `LLM_TIMEOUT_S` | 300 | Per-call timeout on every `LLM(...)` (all four providers); previously no timeout was set |
 
 ## Agent roles (`crew.py::build_agents`)
 
@@ -172,7 +172,7 @@ Only these command heads are allowed; everything else raises `ValueError`. Unsaf
 
 ## Token usage (`crew.py`)
 
-`reset_usage()` / `get_usage()` / `_add_usage(usage)` wrap a `ContextVar` (same pattern as `policy.py`'s `Policy`), so usage accumulates across an entire run — including every autonomous re-planning cycle — without threading a new field through `CrewState`. `run_role` calls `_add_usage` with `CrewOutput.token_usage` (a `crewai.types.usage_metrics.UsageMetrics`) after every `crew.kickoff()`. `initial_state()` calls `reset_usage()` once per new run. No dollar-cost estimate is computed — this project doesn't ship a pricing table for its models.
+`reset_usage()` / `get_usage()` / `_add_usage(usage)` wrap a `ContextVar` (same pattern as `policy.py`'s `Policy`), so usage accumulates across an entire run — including every autonomous re-planning cycle — without threading a new field through `CrewState`. `run_role` calls `_add_usage` with `CrewOutput.token_usage` (a `crewai.types.usage_metrics.UsageMetrics`) after every `crew.kickoff()`. `initial_state()` calls `reset_usage()` once per new run. No dollar-cost estimate is computed; this project doesn't ship pricing tables for its models.
 
 ## App-wide logging (`logging_setup.py`)
 
@@ -194,7 +194,7 @@ Only these command heads are allowed; everything else raises `ValueError`. Unsaf
 | `delete_workspace(workspace)` | `shutil.rmtree` on one run's directory |
 | `reset_all_runs(root=RUNS_DIR)` | Deletes every entry under `root` except `agent-crew.log*`; returns the count removed |
 
-Both are wired to the dashboard's **Clean project** and the sidebar's **Reset environment**, each behind an arm-then-confirm button pair (not a checkbox bound to `session_state` — Streamlit forbids reassigning a widget-bound key after that widget has rendered in the same script run).
+Both are wired to the dashboard's **Clean project** and the sidebar's **Reset environment**, each behind an arm-then-confirm button pair (not a checkbox bound to `session_state`; Streamlit forbids reassigning a widget-bound key after that widget has rendered in the same script run).
 
 ## Module index
 
