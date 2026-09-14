@@ -1,3 +1,11 @@
+"""File I/O, subprocess execution, git CLI wrappers, and per-run log helpers.
+
+Responsibility: every read/write/run operation that touches a workspace directory or git.
+Must not: import CrewAI, LangGraph, or Streamlit.
+Next: shell.py (run_terminal builds on run_subprocess/safe_file); graph.py nodes call write_file,
+run_tests, git_*.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -42,6 +50,7 @@ def is_test_path(relative: str) -> bool:
 
 
 def safe_file(workspace: Path, relative: str) -> Path:
+    # Trust boundary: any path that escapes the workspace root is rejected here before I/O.
     cleaned = relative.strip().replace("\\", "/").lstrip("/")
     dest = (workspace / cleaned).resolve()
     if not dest.is_relative_to(workspace.resolve()):
@@ -500,6 +509,7 @@ def probe_one_mutation(workspace: Path) -> tuple[str, str]:
     try:
         passed, output = run_tests(workspace)
     finally:
+        # Always restore; the mutation must not survive even if run_tests raises.
         path.write_text(original, encoding="utf-8")
     if passed:
         return "survived", f"Mutant survived in {rel}. Tests do not pin behavior.\n{output}"

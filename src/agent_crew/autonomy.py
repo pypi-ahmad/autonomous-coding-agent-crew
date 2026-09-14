@@ -1,3 +1,12 @@
+"""Subtask parsing, dependency auto-install, and HEALTH.md renderer.
+
+Responsibility: parse ## Sub-tasks from plan text; discover and install missing pip packages;
+render HEALTH.md from run state.
+Must not: make LLM calls.
+Next: graph.coder_node calls install_deps; graph.evaluate_node calls write_health;
+      graph.planner_node calls remaining_subtasks to continue partial autonomous runs.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -109,6 +118,7 @@ def discover_imports(workspace: Path) -> list[str]:
 
 
 def needed_packages(imports: list[str]) -> list[str]:
+    # STDLIB set prevents spurious pip install attempts for built-in modules.
     pkgs: list[str] = []
     for name in imports:
         if name in STDLIB or name.startswith("_"):

@@ -1,3 +1,11 @@
+"""Allowlist-based command builder and terminal runner.
+
+Responsibility: parse and validate run_terminal commands; enforce pip-install restrictions.
+Must not: bypass safe_file or run_subprocess; never construct a command that isn't on the allowlist.
+Next: autonomy.install_deps and graph nodes call run_terminal; build_command is the sole validation
+gate.
+"""
+
 from __future__ import annotations
 
 import shlex
@@ -81,6 +89,8 @@ def _pip_command(workspace: Path, rest: list[str]) -> list[str]:
         raise ValueError("pip flags are limited to package names")
     if not pkgs:
         raise ValueError("pip install needs a package")
+    # Packages install into .vendor/ (not site-packages) so they don't pollute the host env.
+    # workspace._sandbox_env adds .vendor/ to PYTHONPATH for subprocess invocations.
     vendor = workspace / ".vendor"
     vendor.mkdir(parents=True, exist_ok=True)
     return [sys.executable, "-m", "pip", "install", "--target", str(vendor), *pkgs]

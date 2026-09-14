@@ -1,3 +1,12 @@
+"""Agent definitions, the run_role entry point, and token-usage tracking.
+
+Responsibility: build all nine CrewAI agents; execute a single-agent Crew per role call; accumulate
+token usage.
+Must not: own control flow or write files directly.
+Next: graph.py calls build_agents and (via reliability.run_role_retry) run_role; collab.run_parallel
+fans out jobs.
+"""
+
 from __future__ import annotations
 
 from contextvars import ContextVar
@@ -11,6 +20,9 @@ from agent_crew.tools import make_fs_tools, make_read_tools
 if TYPE_CHECKING:
     from crewai.tools import BaseTool
 
+# _USAGE is reset once per run in graph.initial_state via reset_usage().
+# collab.run_parallel propagates the same context copy to all threads so parallel roles
+# write into the same accumulator dict (mutation of the dict is thread-safe for += on CPython).
 _USAGE_FIELDS = ("total_tokens", "prompt_tokens", "completion_tokens", "successful_requests")
 _USAGE: ContextVar[dict[str, int] | None] = ContextVar("usage", default=None)
 

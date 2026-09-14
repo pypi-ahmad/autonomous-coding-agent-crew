@@ -1,3 +1,11 @@
+"""App-wide rotating log handler.
+
+Responsibility: configure the ``agent_crew`` logger to write to runs/agent-crew.log (2 MB x 3
+backups).
+Must not: import UI, graph, CrewAI, or LangGraph modules.
+Next: every module calls get_logger() to obtain the configured logger.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -21,7 +29,7 @@ def configure_logging(level: int = logging.INFO) -> logging.Logger:
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     logger.addHandler(handler)
     logger.setLevel(level)
-    logger.propagate = False
+    logger.propagate = False  # prevents duplicate output on the root logger
     return logger
 
 

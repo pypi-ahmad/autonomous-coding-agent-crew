@@ -1,3 +1,11 @@
+"""CrewAI BaseTool wrappers that expose workspace operations to agents.
+
+Responsibility: thin adapters only — all logic delegated to workspace/shell/codeintel/quality.
+Must not: contain domain logic or call LLMs directly.
+Next: crew.build_agents assigns make_fs_tools to impl roles; make_read_tools gives the read-only
+subset to the reviewer.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -159,6 +167,7 @@ def make_fs_tools(workspace: Path, *, protect_tests: bool = False) -> list[BaseT
     ]
 
 
+# Reviewer and planner agents get read-only tools: no write_file, run_terminal, or run_python.
 READ_TOOL_NAMES = {
     "list_files",
     "read_file",

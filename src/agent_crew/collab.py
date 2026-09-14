@@ -1,3 +1,13 @@
+"""Parallel role execution, plan voting, and write-conflict resolution.
+
+Responsibility: fan out coding roles with ThreadPoolExecutor; tally plan votes; pick the winning
+file body
+per conflicting path by role priority (database > backend/coder > frontend > tester).
+Must not: merge or diff file content — only select the single winning body.
+Next: graph.coder_node calls run_parallel then resolve_writes/apply_resolved; graph.planner_node
+calls tally_votes.
+"""
+
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -115,6 +125,8 @@ def detect_conflicts(owned: dict[str, list[str]]) -> list[str]:
 
 
 def resolve_writes(outputs: dict[str, str]) -> tuple[dict[str, tuple[str, str]], list[str]]:
+    # Role separation invariant: only the tester role may write test paths;
+    # non-tester roles that emit test paths are silently dropped, and vice-versa.
     claimed: dict[str, tuple[str, str]] = {}
     conflicts: list[str] = []
     for role, text in outputs.items():
@@ -181,6 +193,8 @@ def run_parallel(
     with ThreadPoolExecutor(max_workers=min(4, len(jobs))) as pool:
         futs = []
         for role, (prompt, expected) in jobs.items():
+            # copy_context() snapshots the current ContextVar state (Policy + _USAGE)
+            # so each thread inherits the same policy and writes to the same usage dict.
             ctx = copy_context()
             futs.append(pool.submit(ctx.run, work, role, prompt, expected))
         for fut in as_completed(futs):

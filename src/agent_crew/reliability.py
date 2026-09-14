@@ -1,3 +1,12 @@
+"""Retry/backoff wrapper, static fallback plan, and heuristic run scorer.
+
+Responsibility: shield callers from transient LLM failures; score a run 0-100 from
+test/coverage/error/mutant signals.
+Must not: own any retry state that persists between runs.
+Next: collab.run_parallel calls run_role_retry per thread; graph nodes call safe_role for non-fatal
+LLM calls.
+"""
+
 from __future__ import annotations
 
 import time

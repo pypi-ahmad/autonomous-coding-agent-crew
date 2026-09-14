@@ -1,3 +1,11 @@
+"""Static file scaffolding for blank project templates and database overlays.
+
+Responsibility: write template files into a fresh workspace; skip any file that already exists.
+Must not: detect stack, call LLMs, or hold mutable state — TEMPLATES and DATABASES are read-only
+dicts.
+Next: graph.initial_state calls apply_template then apply_database before the first planner pass.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
