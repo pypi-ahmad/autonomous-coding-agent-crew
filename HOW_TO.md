@@ -2,7 +2,7 @@
 
 Everything here assumes you're running the Streamlit dashboard. For a dictionary of every field/function, see [REFERENCE.md](REFERENCE.md). For system design, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Part A — Your first run (tutorial)
+## Part A: Your first run (tutorial)
 
 1. **Install.** You need [uv](https://docs.astral.sh/uv/) and Python 3.12.
 
@@ -11,7 +11,7 @@ Everything here assumes you're running the Streamlit dashboard. For a dictionary
    cd autonomous-coding-agent-crew
    ```
 
-2. **Launch.** On Windows, double-click `run.cmd`; on Linux/macOS, run `./run.sh` — either creates `.env` from `.env.example` if missing, runs `uv sync --all-groups`, and starts the app. Or, on any OS, run it directly:
+2. **Launch.** On Windows, double-click `run.cmd`; on Linux/macOS, run `./run.sh`. Both create `.env` from `.env.example` if missing, run `uv sync --all-groups`, and start the app. Or, on any OS, run it directly:
 
    ```bash
    uv sync --all-groups
@@ -60,7 +60,7 @@ In **Locked files**, enter comma-separated globs (e.g. `README.md, tests/*, *.to
 
 ### Turn on autonomous mode
 
-Toggle **Autonomous (no pauses)** in the sidebar's Autonomy section before submitting the task. Instead of pausing for plan approval and diff review, the crew runs planner → coder → reviewer → tester → debugger → documenter → evaluate on a loop, re-planning with any leftover sub-tasks until the score/gates pass or the **Goal cycle budget** (default 2, max 20) is used up. Good for a well-scoped goal you're willing to let run unattended; bad if you want to steer mid-run — for that, leave autonomous mode off.
+Toggle **Autonomous (no pauses)** in the sidebar's Autonomy section before submitting the task. Instead of pausing for plan approval and diff review, the crew runs planner → coder → reviewer → tester → debugger → documenter → evaluate on a loop, re-planning with any leftover sub-tasks until the score/gates pass or the **Goal cycle budget** (default 2, max 20) is used up. Good for a well-scoped goal you're willing to let run unattended; bad if you want to steer mid-run. For that, leave autonomous mode off.
 
 While it's running, a **Stop** button ends the loop cleanly after the current step and takes you straight to the results dashboard with whatever's done so far — nothing is lost, the workspace and its `run.json` checkpoint are on disk either way.
 

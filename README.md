@@ -27,7 +27,7 @@ https://github.com/pypi-ahmad/autonomous-coding-agent-crew
 - [Development](#development)
 - [Docs](#docs) — links to every other doc in this repo
 
-`agent-crew` `0.2.1` is a local-first, hybrid CrewAI + LangGraph coding crew with a Streamlit dashboard. Describe a coding task or a high-level goal; a planner, parallel coder specialists (backend/frontend/database as needed), a reviewer, a tester, a debugger, and a documenter take turns through a LangGraph pipeline, with CrewAI agents doing the reasoning at each step. Point it at a blank folder with a template, or an existing project — it detects the stack either way. You approve the plan, review the diff after coding, then quality gates (tests, coverage, lint, types, security, perf) decide whether the run goes to the debugger or to docs. Everything lands in `runs/<id>/`.
+`agent-crew` `0.2.1` is a local-first, hybrid CrewAI + LangGraph coding crew with a Streamlit dashboard. Describe a coding task or a high-level goal; a planner, parallel coder specialists (backend/frontend/database as needed), a reviewer, a tester, a debugger, and a documenter take turns through a LangGraph pipeline, with CrewAI agents doing the reasoning at each step. Point it at a blank folder with a template, or an existing project; it detects the stack either way. You approve the plan, review the diff after coding, then quality gates (tests, coverage, lint, types, security, perf) decide whether the run goes to the debugger or to docs. Everything lands in `runs/<id>/`.
 
 ```text
 detect → plan + vote → parallel specialists + tester → reviewer → gates ↔ debug → docs
@@ -38,20 +38,20 @@ detect → plan + vote → parallel specialists + tester → reviewer → gates 
 
 ## Features
 
-- **Dashboard** — live activity feed, file tree, diff, terminal output, test metrics, token usage, execution timeline
-- **Parallel build** — backend / frontend / database / tester run together when the stack isn't simple
-- **Reviewer** — architecture pass, separate from the debugger; one revise loop
-- **Votes + conflicts** — plan APPROVE/REVISE majority; overlapping file writes logged and merged by role priority
-- **Quality gates** — tests, coverage floor (70%), ruff, ty, security scan, perf probe — a fail routes to the debugger/tester, not to docs
-- **Autonomous mode** — skip the approval pauses; loop planner → code → test → eval until the goal is met or a cycle budget runs out
-- **Stack detect** — Python, JS, Go, Java markers; FastAPI, Flask, Django, React, Next.js, Express, Streamlit
-- **12 templates + 5 database overlays** — scaffold a blank project, or lay a database (SQLite, SQLAlchemy-shaped, Postgres, Prisma) on top
-- **Memory + eval** — recall past lessons across runs; score /100 with `EVAL.md`
-- **Reliability** — retries with backoff, fallback plan, resume from `run.json`, git-based rollback on exhausted debug attempts
-- **Permissions** — write / terminal / pip toggles, dry-run, locked file globs
-- **Configuration** — max debug attempts and coverage floor tunable per run; one-click Clean project / Reset environment
-- **Rotating log** — `runs/agent-crew.log`, app-wide, survives a "Reset environment"
-- **Export** — project zip, `REPORT.md`, `HEALTH.md`, `QUALITY.md`, `HISTORY.md`; missing deps auto-installed into `requirements.txt`
+- **Dashboard:** live activity feed, file tree, diff, terminal output, test metrics, token usage, execution timeline
+- **Parallel build:** backend / frontend / database / tester run together when the stack isn't simple
+- **Reviewer:** architecture pass, separate from the debugger; one revise loop
+- **Votes + conflicts:** plan APPROVE/REVISE majority; overlapping file writes logged and merged by role priority
+- **Quality gates:** tests, coverage floor (70%), ruff, ty, security scan, perf probe; a fail routes to the debugger/tester, not to docs
+- **Autonomous mode:** skip the approval pauses; loop planner → code → test → eval until the goal is met or a cycle budget runs out
+- **Stack detect:** Python, JS, Go, Java markers; FastAPI, Flask, Django, React, Next.js, Express, Streamlit
+- **12 templates + 5 database overlays:** scaffold a blank project, or lay a database (SQLite, SQLAlchemy-shaped, Postgres, Prisma) on top
+- **Memory + eval:** recall past lessons across runs; score /100 with `EVAL.md`
+- **Reliability:** retries with backoff, fallback plan, resume from `run.json`, git-based rollback on exhausted debug attempts
+- **Permissions:** write / terminal / pip toggles, dry-run, locked file globs
+- **Configuration:** max debug attempts and coverage floor tunable per run; one-click Clean project / Reset environment
+- **Rotating log:** `runs/agent-crew.log`, app-wide, survives a "Reset environment"
+- **Export:** project zip, `REPORT.md`, `HEALTH.md`, `QUALITY.md`, `HISTORY.md`; missing deps auto-installed into `requirements.txt`
 
 ## How it works
 
@@ -142,11 +142,11 @@ CI (`.github/workflows/ci.yml`) runs format, lint, types, tests, pip-audit, and 
 
 ## Docs
 
-[ARCHITECTURE.md](ARCHITECTURE.md) (system design) · [REFERENCE.md](REFERENCE.md) (module/API dictionary) · [HOW_TO.md](HOW_TO.md) (tutorial + recipes) · [MODERNIZATION_PLAN.md](MODERNIZATION_PLAN.md) (forward plan)
+[ARCHITECTURE.md](ARCHITECTURE.md) (system design) · [REFERENCE.md](REFERENCE.md) (module/API dictionary) · [HOW_TO.md](HOW_TO.md) (tutorial + recipes) · [docs/TECHNICAL.md](docs/TECHNICAL.md) (stack invariants, error handling, persistence) · [docs/RUNBOOK.md](docs/RUNBOOK.md) (start/stop, failures, logs) · [MODERNIZATION_PLAN.md](MODERNIZATION_PLAN.md) (forward plan)
 
 Bugs and feature ideas: [CONTRIBUTING.md](CONTRIBUTING.md) and the [issue templates](.github/ISSUE_TEMPLATE/). Security reports: [SECURITY.md](SECURITY.md). Community: [SUPPORT.md](SUPPORT.md). Data/cost responsibility: [DISCLAIMER.md](DISCLAIMER.md). License: [MIT](LICENSE).
 
-Runs entirely on your machine with your own API keys, or fully free via Ollama — no data goes to the maintainer, no donations wanted.
+Runs entirely on your machine with your own API keys, or fully free via Ollama. No data goes to the maintainer, no donations wanted.
 
 <div align="center">
 

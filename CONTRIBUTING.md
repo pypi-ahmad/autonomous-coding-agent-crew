@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking at Autonomous Coding Agent Crew. Bug reports, feature ideas, and pull requests are all welcome — this is a free, community-driven, local-first project.
+Thanks for looking at Autonomous Coding Agent Crew. Bug reports, feature ideas, and pull requests are all welcome. This is a free, community-driven, local-first project.
 
 ## Report a bug
 
