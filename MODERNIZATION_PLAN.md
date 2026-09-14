@@ -232,7 +232,7 @@ Do not start Phase 4 until Phase 1–2 exit criteria are recorded.
 - **Flags:** none. Phases are merged features, not flagged.
 - **Data:** no DB. `runs/` is ephemeral (gitignored). H5 N/A.
 - **Rollback:** revert the phase PR.
-- **Transitional-insecure (H6):** none planned. CI ignore of `PYSEC-2026-311` is a tracked exception (CrewAI transitive; no Chroma server). Close when CrewAI pins a fixed chromadb — not a phase here.
+- **Transitional-insecure (H6):** none planned. CI ignore of `PYSEC-2026-311`, `-3813`, `-3814`, `-3815` is a tracked exception (CrewAI transitive; no Chroma server). Close when CrewAI pins a fixed chromadb — not a phase here.
 - **Oracle:** pytest on workspace + routing. Self-frozen mutation/protect tests after Phase 1.
 - **Testing:** add only the tests each phase names. No Streamlit launch.
 - **Observability:** none beyond `CrewState["log"]`. Leave it.

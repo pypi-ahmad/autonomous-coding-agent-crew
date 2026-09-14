@@ -50,7 +50,7 @@ Still no HTTP API, no database server, no Docker entrypoint.
 | `uv run ruff check .` | Lint | [`Makefile`](Makefile)#L8; CI #L23-24 |
 | `uv run ruff format .` / `--check .` | Format / check | [`Makefile`](Makefile)#L7,11-12; CI #L21-22 |
 | `uv run ty check src/` | Types | [`Makefile`](Makefile)#L9; CI #L25-26 |
-| `uv run pip-audit .` | Advisory scan (ignores `PYSEC-2026-311`, a chromadb HTTP-server RCE this app never triggers) | [`Makefile`](Makefile)#L26-27; CI #L29-32 |
+| `uv run pip-audit .` | Advisory scan (ignores 4 chromadb HTTP-server auth CVEs this app never triggers) | [`Makefile`](Makefile)#L26-27; CI #L29-37 |
 | `uv build` | Wheel/sdist | [`Makefile`](Makefile)#L17-18 |
 | `prek run --all-files` | Hooks (ruff, shellcheck, detect-secrets, actionlint, zizmor) | [`Makefile`](Makefile)#L20-21; [`.pre-commit-config.yaml`](.pre-commit-config.yaml) |
 | End-to-end / contract | **None** | No e2e workflow, no recorded I/O fixtures — the closest is the live-browser verification done ad hoc this session (Playwright), not checked into CI |
@@ -94,7 +94,7 @@ Build-runtime and run-runtime are still the same host (local Python 3.12, or `ub
 | Python 3.12 | Supported | Not EOL |
 | uv / ruff / ty / pytest 9 | Current | Modern-python stack, unchanged |
 | CrewAI / LangGraph / Streamlit | Actively used, not abandoned | No version bump since the first snapshot |
-| chromadb (transitive via crewai) | Advisory `PYSEC-2026-311` | Chroma HTTP-server RCE; this app never starts Chroma. CI explicitly ignores that ID (CI#L32) `[INFERRED]` unused path |
+| chromadb (transitive via crewai) | Advisories `PYSEC-2026-311`, `-3813`, `-3814`, `-3815` | Chroma HTTP-server auth/RBAC/RCE flaws; this app never starts Chroma. CI explicitly ignores those IDs (CI#L34-37) `[INFERRED]` unused path |
 
 No Python 2, no `requirements.txt` for this repo's own code (templates.py generates one for *scaffolded* projects only), no Poetry, no mypy/black split.
 

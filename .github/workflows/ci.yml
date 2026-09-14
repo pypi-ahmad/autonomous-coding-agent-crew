@@ -27,9 +27,14 @@ jobs:
       - name: Tests
         run: uv run pytest --cov-report=xml
       - name: Audit
-        # chromadb is a CrewAI transitive. PYSEC-2026-311 is Chroma HTTP-server RCE;
-        # this app never starts a Chroma server. CrewAI still pins 1.1.x.
-        run: uv run pip-audit . --ignore-vuln PYSEC-2026-311
+        # chromadb is a CrewAI transitive, pinned to 1.1.x. All four ignored CVEs
+        # are Chroma HTTP-server auth/RBAC/trust_remote_code flaws; this app never
+        # starts a Chroma server or exposes its API.
+        run: >-
+          uv run pip-audit . --ignore-vuln PYSEC-2026-311
+          --ignore-vuln PYSEC-2026-3813
+          --ignore-vuln PYSEC-2026-3814
+          --ignore-vuln PYSEC-2026-3815
 
   hooks:
     runs-on: ubuntu-latest
